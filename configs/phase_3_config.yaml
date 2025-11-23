@@ -1,0 +1,98 @@
+# =============================================================================
+# Phase 3: Entry/Exit Logic Refinement
+# =============================================================================
+# Objective: Test entry and exit variations on top configs from Phase 2
+# Expected: ~480 configurations (20 configs × 4 entry × 6 exit variations)
+# =============================================================================
+
+phase: 3
+name: "Entry/Exit Logic Refinement"
+description: "Optimize entry and exit logic variations"
+
+inherit_from_phase: 2
+top_configs: 10                  # Use top 10 from Phase 2
+
+# Entry logic variations
+entry_variations:
+  - type: "close_below"          # Standard: close below band
+    params: {}
+
+  - type: "touch"                # Touch or cross band
+    params:
+      tolerance: 0.001
+
+  - type: "consecutive_2"        # 2 consecutive periods below
+    params: {}
+
+  - type: "consecutive_3"        # 3 consecutive periods below
+    params: {}
+
+# Exit logic variations
+exit_variations:
+  - type: "mean"                 # Return to mean (0 StdDev)
+    params: {}
+
+  - type: "opposite_band"        # Reach opposite band
+    params: {}
+
+  - type: "profit_target"        # Fixed profit target
+    params:
+      target_percent: 5.0        # 5% profit target
+
+  - type: "profit_target"
+    params:
+      target_percent: 10.0       # 10% profit target
+
+  - type: "time_based"           # Time-based exit
+    params:
+      max_days: 10
+
+  - type: "time_based"
+    params:
+      max_days: 20
+
+# Stock universe
+stocks:
+  count: 250
+  data_path: "data/raw/"
+
+# Execution settings
+execution:
+  parallel: true
+  n_jobs: 16
+  batch_size: 20
+
+  start_date: "2010-01-01"
+  end_date: "2023-12-31"
+
+  initial_capital: 100000
+  commission: 0.001
+  slippage: 0.0
+
+# Walk-forward validation
+walk_forward:
+  enabled: true
+  train_years: 2
+  test_years: 1
+  step_months: 6
+
+# Success criteria
+success_criteria:
+  min_sharpe_out_sample: 0.9
+  max_drawdown: 0.25
+  min_trades: 150
+  top_n: 20
+
+# Output
+output:
+  save_to_database: true
+  generate_report: true
+  report_format: ["pdf", "html"]
+  results_dir: "data/results/phase_3"
+  report_path: "data/results/phase_3/phase_3_report.pdf"
+
+logging:
+  level: "INFO"
+  log_to_database: true
+  log_to_file: true
+  log_file: "logs/phase_3.log"

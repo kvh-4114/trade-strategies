@@ -1,0 +1,90 @@
+# =============================================================================
+# Phase 4: Filter Integration
+# =============================================================================
+# Objective: Add robustness filters to top strategies
+# Expected: Test filter combinations on top 20 configs from Phase 3
+# =============================================================================
+
+phase: 4
+name: "Filter Integration"
+description: "Add and optimize robustness filters (volume, RSI, trend, volatility)"
+
+inherit_from_phase: 3
+top_configs: 20
+
+# Filter configurations
+filters:
+  # Volume filter
+  volume:
+    enabled: [true, false]
+    threshold: [1.2, 1.5, 2.0]   # Multiplier of average volume
+
+  # RSI filter
+  rsi:
+    enabled: [true, false]
+    oversold: [25, 30, 35]
+    overbought: [65, 70, 75]
+
+  # Trend filter
+  trend:
+    enabled: [true, false]
+    ma_period: [100, 200]
+    only_trade_with_trend: [true, false]
+
+  # Volatility filter
+  volatility:
+    enabled: [true, false]
+    atr_period: [14, 20]
+    min_atr_percentile: [20, 50]
+
+# Stock universe
+stocks:
+  count: 250
+  data_path: "data/raw/"
+
+# Execution
+execution:
+  parallel: true
+  n_jobs: 16
+  batch_size: 20
+
+  start_date: "2010-01-01"
+  end_date: "2023-12-31"
+
+  initial_capital: 100000
+  commission: 0.001
+  slippage: 0.0005               # Add slippage
+
+# Walk-forward
+walk_forward:
+  enabled: true
+  train_years: 2
+  test_years: 1
+  step_months: 6
+
+# Success criteria
+success_criteria:
+  min_sharpe_out_sample: 1.0
+  max_drawdown: 0.20             # Stricter drawdown
+  min_trades: 100                # Filters may reduce trades
+  top_n: 10
+
+# Analysis
+analysis:
+  filter_impact:                 # Analyze filter effectiveness
+    enabled: true
+    compare_with_without: true
+
+# Output
+output:
+  save_to_database: true
+  generate_report: true
+  report_format: ["pdf", "html"]
+  results_dir: "data/results/phase_4"
+  report_path: "data/results/phase_4/phase_4_report.pdf"
+
+logging:
+  level: "INFO"
+  log_to_database: true
+  log_to_file: true
+  log_file: "logs/phase_4.log"
