@@ -91,3 +91,5 @@ reports/*.html
 
 # OS
 Thumbs.db
+# Extracted stock data
+mean_reversion/11_22_25_daily/
