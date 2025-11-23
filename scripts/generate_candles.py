@@ -66,7 +66,7 @@ def get_stock_data(db_manager, symbol):
 
 def save_candles_to_db(db_manager, symbol, candle_type, aggregation_days, candle_df):
     """
-    Save candles to database.
+    Save candles to database using bulk insert for speed.
 
     Args:
         db_manager: DatabaseManager instance
@@ -81,20 +81,10 @@ def save_candles_to_db(db_manager, symbol, candle_type, aggregation_days, candle
     # Reset index to get date as column
     df = candle_df.reset_index()
 
-    inserted = 0
+    # Prepare bulk data
+    values = []
     for _, row in df.iterrows():
-        query = """
-            INSERT INTO candles (symbol, candle_type, aggregation_days, date, open, high, low, close, volume)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (symbol, candle_type, aggregation_days, date) DO UPDATE
-            SET open = EXCLUDED.open,
-                high = EXCLUDED.high,
-                low = EXCLUDED.low,
-                close = EXCLUDED.close,
-                volume = EXCLUDED.volume
-        """
-
-        params = (
+        values.append((
             symbol,
             candle_type,
             aggregation_days,
@@ -104,12 +94,25 @@ def save_candles_to_db(db_manager, symbol, candle_type, aggregation_days, candle
             float(row['low']),
             float(row['close']),
             int(row['volume']) if 'volume' in row and pd.notna(row['volume']) else 0
-        )
+        ))
 
-        db_manager.execute_query(query, params, fetch=False)
-        inserted += 1
+    # Bulk insert with ON CONFLICT
+    query = """
+        INSERT INTO candles (symbol, candle_type, aggregation_days, date, open, high, low, close, volume)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (symbol, candle_type, aggregation_days, date) DO UPDATE
+        SET open = EXCLUDED.open,
+            high = EXCLUDED.high,
+            low = EXCLUDED.low,
+            close = EXCLUDED.close,
+            volume = EXCLUDED.volume
+    """
 
-    return inserted
+    # Use execute_many for bulk insert
+    with db_manager.get_cursor() as cursor:
+        cursor.executemany(query, values)
+
+    return len(values)
 
 
 def generate_all_candles_for_symbol(db_manager, symbol, aggregation_days=[1, 2, 3, 4, 5]):

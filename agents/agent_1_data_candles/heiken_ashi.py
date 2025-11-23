@@ -108,15 +108,16 @@ class HeikenAshiCandleGenerator:
         Returns:
             Aggregated DataFrame
         """
-        agg_dict = {
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'sum'
-        }
+        # Create rolling windows manually since 'first'/'last' don't work with pandas rolling
+        rolling = df.rolling(window=n_days, min_periods=n_days)
 
-        result = df.rolling(window=n_days, min_periods=n_days).agg(agg_dict)
+        result = pd.DataFrame(index=df.index)
+        result['open'] = rolling['open'].apply(lambda x: x.iloc[0], raw=False)
+        result['high'] = rolling['high'].max()
+        result['low'] = rolling['low'].min()
+        result['close'] = rolling['close'].apply(lambda x: x.iloc[-1], raw=False)
+        result['volume'] = rolling['volume'].sum()
+
         result = result.dropna()
 
         self.logger.info(
