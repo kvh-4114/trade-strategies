@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    build:
+      context: ./database
+      dockerfile: Dockerfile.postgres
+    container_name: mean_reversion_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mean_reversion}
+      POSTGRES_USER: ${DB_USER:-trader}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./database/migrations:/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-trader} -d ${DB_NAME:-mean_reversion}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - mean_reversion_network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mean_reversion_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-mean_reversion}
+      DB_USER: ${DB_USER:-trader}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      PYTHONPATH: /app
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      N_JOBS: ${N_JOBS:--1}
+    volumes:
+      - ./data:/app/data
+      - ./data/results:/app/results
+      - ./configs:/app/configs:ro
+      - ./agents:/app/agents:ro
+      - ./orchestrator:/app/orchestrator:ro
+      - ./scripts:/app/scripts:ro
+    networks:
+      - mean_reversion_network
+    restart: unless-stopped
+    # Command can be overridden when running specific phases
+    command: tail -f /dev/null  # Keep container running
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  mean_reversion_network:
+    driver: bridge
