@@ -145,6 +145,13 @@ class LinearRegressionCandleGenerator:
                 # Get window of data
                 window_data = series.iloc[i - window + 1:i + 1].values
 
+                # Convert to float array (handles Decimal types from database)
+                try:
+                    window_data = np.array(window_data, dtype=float)
+                except (ValueError, TypeError):
+                    predictions.append(np.nan)
+                    continue
+
                 # Validate data
                 if len(window_data) != window or np.any(np.isnan(window_data)):
                     predictions.append(np.nan)
