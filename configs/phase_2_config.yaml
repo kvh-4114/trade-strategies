@@ -1,0 +1,110 @@
+# =============================================================================
+# Phase 2: Mean & StdDev Optimization
+# =============================================================================
+# Objective: Optimize statistical parameters for top 5 candle types from Phase 1
+# Expected: ~400 configurations tested (5 candles × 4 means × 5 lookbacks × 4 thresholds)
+# =============================================================================
+
+phase: 2
+name: "Mean & StdDev Optimization"
+description: "Grid search over mean types, lookbacks, and entry thresholds"
+
+# Use top configs from Phase 1
+inherit_from_phase: 1
+top_configs: 5                   # Use top 5 candle types from Phase 1
+
+# Parameter grid for optimization
+parameter_grid:
+  # Mean calculation methods
+  mean_type: ["SMA", "EMA", "LinReg", "VWAP"]
+
+  # Lookback periods
+  mean_lookback: [10, 20, 30, 50, 100]
+  stddev_lookback: [10, 20, 30, 50, 100]
+
+  # Entry thresholds (standard deviations)
+  entry_threshold: [1.5, 2.0, 2.5, 3.0]
+
+  # Exit methods
+  exit_type: ["mean"]            # Keep simple for now
+
+# Fixed parameters (not optimized in Phase 2)
+fixed_parameters:
+  position_sizing: "fixed"
+  position_size: 10000
+
+  use_volume_filter: false
+  use_rsi_filter: false
+  use_trend_filter: false
+  use_volatility_filter: false
+
+  stop_loss_type: "none"
+
+# Stock universe (same as Phase 1)
+stocks:
+  count: 250
+  data_path: "data/raw/"
+  symbols: []
+
+# Execution settings
+execution:
+  parallel: true
+  n_jobs: 16                     # More parallelization for Phase 2
+  batch_size: 20
+
+  start_date: "2010-01-01"
+  end_date: "2023-12-31"
+
+  initial_capital: 100000
+  commission: 0.001
+  slippage: 0.0
+
+# Walk-forward validation
+walk_forward:
+  enabled: true
+  train_years: 2                 # 2 years training
+  test_years: 1                  # 1 year testing
+  step_months: 6                 # Roll forward 6 months
+  min_in_sample_sharpe: 1.0      # Minimum IS Sharpe to proceed to OOS
+
+# Success criteria for Phase 2
+success_criteria:
+  min_sharpe_in_sample: 1.0
+  min_sharpe_out_sample: 0.8
+  max_drawdown: 0.30             # Tighter drawdown limit
+  min_trades: 150
+
+  # Top configs to advance
+  top_n: 20                      # Advance top 20 to Phase 3
+
+# Optimization settings
+optimization:
+  metric: "sharpe_ratio"         # Primary metric for ranking
+  secondary_metrics:             # Break ties with these
+    - "calmar_ratio"
+    - "total_return"
+
+  # Constraints
+  constraints:
+    max_correlation: 0.80        # Max correlation between configs
+    min_stability: 0.70          # Stability across walk-forward windows
+
+# Output settings
+output:
+  save_to_database: true
+  generate_report: true
+  report_format: ["pdf", "html"]
+  save_equity_curves: true
+  save_trade_logs: true
+  save_parameter_heatmaps: true
+
+  results_dir: "data/results/phase_2"
+  report_path: "data/results/phase_2/phase_2_report.pdf"
+
+# Logging
+logging:
+  level: "INFO"
+  log_to_database: true
+  log_to_file: true
+  log_file: "logs/phase_2.log"
+  progress_updates_every: 10     # Log every 10 configs

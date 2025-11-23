@@ -1,0 +1,187 @@
+# =============================================================================
+# Phase 6: Final Validation & Stress Testing
+# =============================================================================
+# Objective: Comprehensive validation and stress testing of top strategies
+# Expected: Top 10 strategies validated with Monte Carlo, regime analysis, etc.
+# =============================================================================
+
+phase: 6
+name: "Final Validation & Stress Testing"
+description: "Comprehensive validation and robustness testing"
+
+inherit_from_phase: 5
+top_configs: 10
+
+# Stock universe
+stocks:
+  count: 250
+  data_path: "data/raw/"
+
+  # Holdout set for out-of-sample validation
+  holdout:
+    enabled: true
+    percent: 0.20                # 20% holdout
+    random_seed: 42
+
+# Execution
+execution:
+  parallel: true
+  n_jobs: 8                      # Less parallelization for stability
+  batch_size: 25
+
+  start_date: "2010-01-01"
+  end_date: "2023-12-31"
+
+  initial_capital: 100000
+  commission: 0.001
+  slippage: 0.0005
+
+# Monte Carlo simulation
+monte_carlo:
+  enabled: true
+  n_simulations: 1000
+  resample_method: "bootstrap"   # or "parametric"
+  confidence_levels: [0.90, 0.95, 0.99]
+
+  # Statistics to compute
+  compute:
+    - "return_distribution"
+    - "drawdown_distribution"
+    - "sharpe_distribution"
+    - "probability_of_profit"
+
+# Walk-forward validation (extensive)
+walk_forward:
+  enabled: true
+  train_years: 2
+  test_years: 1
+  step_months: 3                 # More granular
+  rolling_optimization: true     # Re-optimize in each window
+
+# Regime analysis
+regime_analysis:
+  enabled: true
+  regimes:
+    bull:
+      definition: "market_return > 0.10"
+      benchmark: "SPY"
+
+    bear:
+      definition: "market_return < -0.10"
+      benchmark: "SPY"
+
+    sideways:
+      definition: "abs(market_return) <= 0.10"
+      benchmark: "SPY"
+
+    high_volatility:
+      definition: "vix > 25"
+
+    low_volatility:
+      definition: "vix < 15"
+
+# Transaction cost sensitivity
+transaction_costs:
+  slippage_bps: [1, 5, 10, 20]   # 0.01%, 0.05%, 0.1%, 0.2%
+  commission_per_trade: [0, 1, 5, 10]  # $0, $1, $5, $10
+
+# Parameter sensitivity analysis
+parameter_sensitivity:
+  enabled: true
+  perturbation_range: 0.10       # ±10% of optimal values
+  parameters_to_test:
+    - "mean_lookback"
+    - "stddev_lookback"
+    - "entry_threshold"
+    - "position_size"
+
+# Robustness tests
+robustness_tests:
+  # Test on different time periods
+  time_period_analysis:
+    enabled: true
+    periods:
+      - {start: "2010-01-01", end: "2013-12-31", name: "Post-2008 Recovery"}
+      - {start: "2014-01-01", end: "2019-12-31", name: "Bull Market"}
+      - {start: "2020-01-01", end: "2023-12-31", name: "COVID & Beyond"}
+
+  # Random stock selection
+  random_stock_selection:
+    enabled: true
+    n_iterations: 100
+    stocks_per_iteration: 100
+
+# Success criteria for final selection
+success_criteria:
+  # Performance thresholds
+  min_sharpe_out_sample: 1.5
+  min_calmar_ratio: 2.0
+  max_drawdown: 0.12
+
+  # Robustness thresholds
+  min_monte_carlo_prob_profit: 0.95  # 95% prob of profit
+  min_regime_consistency: 0.70       # Positive in 70% of regimes
+
+  # Top configs for production
+  top_n: 5
+
+# Deliverables
+deliverables:
+  # Final report
+  final_report:
+    enabled: true
+    format: "pdf"
+    include:
+      - "executive_summary"
+      - "methodology"
+      - "results_overview"
+      - "top_strategies_detail"
+      - "robustness_analysis"
+      - "monte_carlo_results"
+      - "regime_analysis"
+      - "recommendations"
+
+  # Strategy summary
+  strategy_summary:
+    format: "csv"
+    include_all_metrics: true
+
+  # Equity curves
+  equity_curves:
+    format: "png"
+    top_n: 10
+    include_drawdown: true
+
+  # Parameter sensitivity charts
+  sensitivity_charts:
+    format: "png"
+    heatmaps: true
+
+  # Production code
+  production_code:
+    enabled: true
+    include:
+      - "strategy_implementation"
+      - "data_loading"
+      - "execution_logic"
+      - "monitoring"
+
+# Output
+output:
+  save_to_database: true
+  generate_report: true
+  report_format: ["pdf", "html"]
+  results_dir: "data/results/phase_6"
+  report_path: "data/results/phase_6/phase_6_final_report.pdf"
+
+  # Archive all results
+  create_archive: true
+  archive_path: "data/results/phase_6/complete_results.zip"
+
+# Logging
+logging:
+  level: "INFO"
+  log_to_database: true
+  log_to_file: true
+  log_file: "logs/phase_6.log"
+  verbose: true

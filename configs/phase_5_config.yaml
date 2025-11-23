@@ -1,0 +1,98 @@
+# =============================================================================
+# Phase 5: Risk Management Optimization
+# =============================================================================
+# Objective: Optimize position sizing and stop-loss strategies
+# Expected: Test risk management on top 10 configs from Phase 4
+# =============================================================================
+
+phase: 5
+name: "Risk Management Optimization"
+description: "Optimize position sizing and stop-loss parameters"
+
+inherit_from_phase: 4
+top_configs: 10
+
+# Position sizing methods
+position_sizing:
+  - type: "fixed"
+    amount: 10000
+
+  - type: "volatility_adjusted"
+    base_amount: 10000
+    atr_multiplier: [1.0, 1.5, 2.0]
+    max_allocation: 0.10         # Max 10% of capital per position
+
+  - type: "kelly"
+    max_allocation: [0.15, 0.20, 0.25]
+    kelly_fraction: [0.25, 0.50]  # Fractional Kelly
+
+# Stop-loss configurations
+stop_loss:
+  - type: "none"                 # No stop loss (baseline)
+
+  - type: "fixed_pct"
+    percent: [0.02, 0.05, 0.08]  # 2%, 5%, 8% stop loss
+
+  - type: "atr"
+    multiplier: [1.5, 2.0, 2.5, 3.0]
+    atr_period: 14
+
+  - type: "trailing"
+    percent: [0.03, 0.05, 0.08]
+    activation_profit: 0.02      # Activate after 2% profit
+
+# Stock universe
+stocks:
+  count: 250
+  data_path: "data/raw/"
+
+# Execution
+execution:
+  parallel: true
+  n_jobs: 16
+  batch_size: 20
+
+  start_date: "2010-01-01"
+  end_date: "2023-12-31"
+
+  initial_capital: 100000
+  commission: 0.001
+  slippage: 0.0005
+
+# Walk-forward
+walk_forward:
+  enabled: true
+  train_years: 2
+  test_years: 1
+  step_months: 3                 # Shorter step for more windows
+
+# Success criteria
+success_criteria:
+  min_calmar_ratio: 1.5          # Focus on risk-adjusted returns
+  max_drawdown: 0.15             # Very strict drawdown
+  min_sharpe_out_sample: 1.2
+  top_n: 10
+
+# Analysis
+analysis:
+  risk_metrics:
+    enabled: true
+    include:
+      - "value_at_risk"
+      - "conditional_var"
+      - "max_drawdown_duration"
+      - "recovery_factor"
+
+# Output
+output:
+  save_to_database: true
+  generate_report: true
+  report_format: ["pdf", "html"]
+  results_dir: "data/results/phase_5"
+  report_path: "data/results/phase_5/phase_5_report.pdf"
+
+logging:
+  level: "INFO"
+  log_to_database: true
+  log_to_file: true
+  log_file: "logs/phase_5.log"
