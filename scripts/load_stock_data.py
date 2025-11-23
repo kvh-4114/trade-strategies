@@ -12,7 +12,9 @@ from tqdm import tqdm
 import sys
 
 # Add parent directory to path
-sys.path.insert(0, '/home/user/trade-strategies')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(script_dir)
+sys.path.insert(0, parent_dir)
 from agents.agent_5_infrastructure.database_manager import DatabaseManager
 
 # Setup logging
