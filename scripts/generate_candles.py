@@ -18,7 +18,7 @@ sys.path.insert(0, parent_dir)
 from agents.agent_5_infrastructure.database_manager import DatabaseManager
 from agents.agent_1_data_candles.regular_candles import generate_regular_candles
 from agents.agent_1_data_candles.heiken_ashi import generate_heiken_ashi_candles
-from agents.agent_1_data_candles.linreg_candles import generate_linreg_candles
+from agents.agent_1_data_candles.linear_regression import generate_linear_regression_candles
 
 # Setup logging
 logging.basicConfig(
@@ -155,7 +155,7 @@ def generate_all_candles_for_symbol(db_manager, symbol, aggregation_days=[1, 2, 
 
         # Linear Regression candles
         try:
-            linreg_df = generate_linreg_candles(stock_df, aggregation_days=agg_days, window=14)
+            linreg_df = generate_linear_regression_candles(stock_df, aggregation_days=agg_days, window=14)
             count = save_candles_to_db(db_manager, symbol, 'linreg', agg_days, linreg_df)
             results[f'linreg_{agg_days}d'] = count
         except Exception as e:
