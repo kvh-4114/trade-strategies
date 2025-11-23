@@ -1,0 +1,81 @@
+name: Deploy and Run Scripts on EC2
+
+on:
+  # Trigger manually from GitHub web interface
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Script to run'
+        required: true
+        type: choice
+        options:
+          - check_db_progress
+          - generate_candles
+          - run_phase_1
+          - install_dependencies
+      script_args:
+        description: 'Script arguments (optional)'
+        required: false
+        default: ''
+
+jobs:
+  deploy-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies
+        if: inputs.script == 'install_dependencies'
+        uses: aws-actions/aws-ssm-send-command@v1
+        with:
+          instance-ids: ${{ secrets.EC2_INSTANCE_ID }}
+          commands: |
+            cd /home/ec2-user/trade-strategies
+            git pull origin main
+            pip3 install -r requirements.txt --user
+            echo "Dependencies installed successfully"
+
+      - name: Check database progress
+        if: inputs.script == 'check_db_progress'
+        uses: aws-actions/aws-ssm-send-command@v1
+        with:
+          instance-ids: ${{ secrets.EC2_INSTANCE_ID }}
+          commands: |
+            cd /home/ec2-user/trade-strategies
+            git pull origin main
+            python3 scripts/check_db_progress.py
+
+      - name: Generate candles
+        if: inputs.script == 'generate_candles'
+        uses: aws-actions/aws-ssm-send-command@v1
+        with:
+          instance-ids: ${{ secrets.EC2_INSTANCE_ID }}
+          commands: |
+            cd /home/ec2-user/trade-strategies
+            git pull origin main
+            nohup python3 scripts/generate_candles.py ${{ inputs.script_args }} > candle_generation.log 2>&1 &
+            echo "Candle generation started in background. Check logs with: tail -f ~/trade-strategies/candle_generation.log"
+
+      - name: Run Phase 1
+        if: inputs.script == 'run_phase_1'
+        uses: aws-actions/aws-ssm-send-command@v1
+        with:
+          instance-ids: ${{ secrets.EC2_INSTANCE_ID }}
+          commands: |
+            cd /home/ec2-user/trade-strategies
+            git pull origin main
+            python3 scripts/run_phase_1.py ${{ inputs.script_args }}
+
+      - name: Display results
+        run: |
+          echo "Script execution completed on EC2"
+          echo "Check AWS Systems Manager for detailed output"
