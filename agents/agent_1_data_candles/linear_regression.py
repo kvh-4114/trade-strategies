@@ -145,14 +145,29 @@ class LinearRegressionCandleGenerator:
                 # Get window of data
                 window_data = series.iloc[i - window + 1:i + 1].values
 
-                # Fit linear regression
-                x = np.arange(window)
-                slope, intercept, _, _, _ = stats.linregress(x, window_data)
+                # Validate data
+                if len(window_data) != window or np.any(np.isnan(window_data)):
+                    predictions.append(np.nan)
+                    continue
 
-                # Predict value at end of window (last position)
-                prediction = slope * (window - 1) + intercept
+                try:
+                    # Fit linear regression
+                    x = np.arange(window)
+                    result = stats.linregress(x, window_data)
 
-                predictions.append(prediction)
+                    # Handle both old tuple format and new LinregressResult object
+                    if hasattr(result, 'slope'):
+                        slope = result.slope
+                        intercept = result.intercept
+                    else:
+                        slope, intercept = result[0], result[1]
+
+                    # Predict value at end of window (last position)
+                    prediction = slope * (window - 1) + intercept
+
+                    predictions.append(prediction)
+                except Exception:
+                    predictions.append(np.nan)
 
         return pd.Series(predictions, index=series.index)
 
