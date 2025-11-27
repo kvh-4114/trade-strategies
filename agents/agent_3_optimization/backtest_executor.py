@@ -101,65 +101,77 @@ class BacktestExecutor:
             # Extract strategy instance
             strat = results[0]
 
-            # Get equity curve from broker
-            equity_curve = pd.Series(
-                [self.initial_capital] + [end_value],
-                index=[candle_df.index[0], candle_df.index[-1]]
-            )
-
-            # Calculate metrics
-            metrics_calc = MetricsCalculator(risk_free_rate=0.02)
-
-            # Get trade analyzer results
+            # Get trade analyzer results first (more reliable than equity curve for trade stats)
             trade_analysis = strat.analyzers.trades.get_analysis()
 
-            # Build trades DataFrame if we have trades
-            trades_df = None
-            if hasattr(trade_analysis, 'total') and trade_analysis.total.total > 0:
-                # Extract trade data
-                trades_data = []
-                if hasattr(strat, 'trade_list'):
-                    for trade in strat.trade_list:
-                        trades_data.append({
-                            'entry_date': trade.get('entry_date'),
-                            'exit_date': trade.get('exit_date'),
-                            'entry_price': trade.get('entry_price'),
-                            'exit_price': trade.get('exit_price'),
-                            'pnl': trade.get('pnl'),
-                            'holding_period': trade.get('holding_period', 0)
-                        })
+            # Extract winning/losing trades from TradeAnalyzer using robust error handling
+            winning_trades = 0
+            losing_trades = 0
+            total_trades = 0
 
-                    if trades_data:
-                        trades_df = pd.DataFrame(trades_data)
+            try:
+                if hasattr(trade_analysis, 'total') and hasattr(trade_analysis.total, 'total'):
+                    total_trades = trade_analysis.total.total
+            except (AttributeError, TypeError):
+                pass
 
-            # Calculate comprehensive metrics
-            metrics = metrics_calc.calculate_all_metrics(
-                equity_curve=equity_curve,
-                trades=trades_df,
-                initial_capital=self.initial_capital
-            )
+            try:
+                if hasattr(trade_analysis, 'won') and hasattr(trade_analysis.won, 'total'):
+                    winning_trades = trade_analysis.won.total
+            except (AttributeError, TypeError):
+                pass
 
-            # Add backtest-specific info
-            metrics['symbol'] = symbol
-            metrics['candle_type'] = candle_type
-            metrics['aggregation_days'] = aggregation_days
-            metrics['start_value'] = start_value
-            metrics['end_value'] = end_value
-            metrics['pnl'] = end_value - start_value
-            metrics['strategy_params'] = strategy_params
+            try:
+                if hasattr(trade_analysis, 'lost') and hasattr(trade_analysis.lost, 'total'):
+                    losing_trades = trade_analysis.lost.total
+            except (AttributeError, TypeError):
+                pass
 
-            # Add analyzer results
-            metrics['total_trades'] = trade_analysis.total.total if hasattr(trade_analysis, 'total') else 0
+            # Calculate win rate
+            win_rate = (winning_trades / total_trades * 100.0) if total_trades > 0 else 0.0
 
-            # Drawdown
+            # Get drawdown info
             dd_analysis = strat.analyzers.drawdown.get_analysis()
-            if hasattr(dd_analysis, 'max'):
-                metrics['max_drawdown'] = dd_analysis.max.drawdown / 100.0  # Convert to decimal
+            max_drawdown_pct = 0.0
+            try:
+                if hasattr(dd_analysis, 'max') and hasattr(dd_analysis.max, 'drawdown'):
+                    max_drawdown_pct = dd_analysis.max.drawdown / 100.0  # Convert to decimal
+            except (AttributeError, TypeError):
+                pass
 
-            # Sharpe from analyzer
+            # Get returns analyzer
+            returns_analysis = strat.analyzers.returns.get_analysis()
+            total_return = (end_value - start_value) / start_value
+
+            # Get Sharpe from analyzer
             sharpe_analysis = strat.analyzers.sharpe.get_analysis()
-            if sharpe_analysis and 'sharperatio' in sharpe_analysis:
-                metrics['sharpe_ratio_bt'] = sharpe_analysis['sharperatio']
+            sharpe_ratio = 0.0
+            try:
+                if sharpe_analysis and 'sharperatio' in sharpe_analysis:
+                    sharpe_value = sharpe_analysis['sharperatio']
+                    # Handle None or NaN values
+                    if sharpe_value is not None and not pd.isna(sharpe_value):
+                        sharpe_ratio = sharpe_value
+            except (AttributeError, TypeError, KeyError):
+                pass
+
+            # Build metrics dictionary directly from analyzer results
+            metrics = {
+                'symbol': symbol,
+                'candle_type': candle_type,
+                'aggregation_days': aggregation_days,
+                'start_value': start_value,
+                'end_value': end_value,
+                'pnl': end_value - start_value,
+                'total_return': total_return,
+                'sharpe_ratio': sharpe_ratio,
+                'max_drawdown': max_drawdown_pct,
+                'total_trades': total_trades,
+                'winning_trades': winning_trades,
+                'losing_trades': losing_trades,
+                'win_rate': win_rate,
+                'strategy_params': strategy_params
+            }
 
             self.logger.info(
                 f"Completed backtest for {symbol}: "
