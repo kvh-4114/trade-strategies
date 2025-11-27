@@ -55,9 +55,9 @@ execution:
   n_jobs: 8                      # Number of parallel processes
   batch_size: 10                 # Stocks per batch
 
-  # Backtest period
-  start_date: "2010-01-01"
-  end_date: "2023-12-31"
+  # Backtest period - use full data range available for each stock
+  start_date: null      # Use first available date
+  end_date: null        # Use last available date (2025-11-21)
 
   # Initial capital
   initial_capital: 100000
