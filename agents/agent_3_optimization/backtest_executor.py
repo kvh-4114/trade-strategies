@@ -101,31 +101,10 @@ class BacktestExecutor:
             # Extract strategy instance
             strat = results[0]
 
-            # Get trade analyzer results first (more reliable than equity curve for trade stats)
-            trade_analysis = strat.analyzers.trades.get_analysis()
-
-            # Extract winning/losing trades from TradeAnalyzer using robust error handling
-            winning_trades = 0
-            losing_trades = 0
-            total_trades = 0
-
-            try:
-                if hasattr(trade_analysis, 'total') and hasattr(trade_analysis.total, 'total'):
-                    total_trades = trade_analysis.total.total
-            except (AttributeError, TypeError):
-                pass
-
-            try:
-                if hasattr(trade_analysis, 'won') and hasattr(trade_analysis.won, 'total'):
-                    winning_trades = trade_analysis.won.total
-            except (AttributeError, TypeError):
-                pass
-
-            try:
-                if hasattr(trade_analysis, 'lost') and hasattr(trade_analysis.lost, 'total'):
-                    losing_trades = trade_analysis.lost.total
-            except (AttributeError, TypeError):
-                pass
+            # Get trade stats directly from strategy (it tracks wins/losses in notify_trade)
+            total_trades = strat.trade_count
+            winning_trades = strat.winning_trades
+            losing_trades = strat.losing_trades
 
             # Calculate win rate
             win_rate = (winning_trades / total_trades * 100.0) if total_trades > 0 else 0.0
