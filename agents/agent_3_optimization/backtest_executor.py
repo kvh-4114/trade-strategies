@@ -267,49 +267,25 @@ class BacktestExecutor:
             config_id = config_result[0][0]
             self.logger.debug(f"Created strategy_config ID: {config_id}")
 
-            # Step 2: Insert backtest results with RETURNING to verify
+            # Step 2: Insert backtest results (only columns that exist in table)
             results_query = """
                 INSERT INTO backtest_results (
                     config_id, symbol,
-                    initial_capital, final_value, total_return, annualized_return,
-                    sharpe_ratio, sortino_ratio, calmar_ratio,
-                    max_drawdown, avg_drawdown, max_drawdown_duration,
-                    total_trades, winning_trades, losing_trades, win_rate,
-                    avg_win, avg_loss,
-                    profit_factor
+                    total_return, sharpe_ratio, max_drawdown,
+                    total_trades, win_rate
                 )
-                VALUES (
-                    %s, %s,
-                    %s, %s, %s, %s,
-                    %s, %s, %s,
-                    %s, %s, %s,
-                    %s, %s, %s, %s,
-                    %s, %s,
-                    %s
-                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """
 
             results_params = (
                 config_id,
                 results['symbol'],
-                results['initial_capital'],
-                results['final_value'],
                 results['total_return'],
-                results['annualized_return'],
                 results['sharpe_ratio'],
-                results['sortino_ratio'],
-                results['calmar_ratio'],
                 results['max_drawdown'],
-                results.get('avg_drawdown', 0),
-                results.get('max_drawdown_duration', 0),
                 results['total_trades'],
-                results['winning_trades'],
-                results['losing_trades'],
-                results['win_rate'],
-                results.get('avg_win', 0),
-                results.get('avg_loss', 0),
-                results.get('profit_factor', 0)
+                results['win_rate']
             )
 
             result_insert = db_manager.execute_query(results_query, results_params)
