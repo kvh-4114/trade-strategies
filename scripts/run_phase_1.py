@@ -174,15 +174,16 @@ def generate_summary_report(db: DatabaseManager):
     # Get top performers by Sharpe ratio
     query = """
         SELECT
-            candle_type,
-            aggregation_days,
+            sc.candle_type,
+            sc.aggregation_days,
             COUNT(*) as num_stocks,
-            AVG(sharpe_ratio) as avg_sharpe,
-            AVG(total_return) as avg_return,
-            AVG(max_drawdown) as avg_drawdown,
-            AVG(total_trades) as avg_trades
-        FROM backtest_results
-        GROUP BY candle_type, aggregation_days
+            AVG(br.sharpe_ratio) as avg_sharpe,
+            AVG(br.total_return) as avg_return,
+            AVG(br.max_drawdown) as avg_drawdown,
+            AVG(br.total_trades) as avg_trades
+        FROM backtest_results br
+        JOIN strategy_configs sc ON br.config_id = sc.id
+        GROUP BY sc.candle_type, sc.aggregation_days
         ORDER BY avg_sharpe DESC
     """
 
@@ -207,15 +208,16 @@ def generate_summary_report(db: DatabaseManager):
     # Get top performing individual stocks
     query = """
         SELECT
-            symbol,
-            candle_type,
-            aggregation_days,
-            sharpe_ratio,
-            total_return,
-            max_drawdown,
-            total_trades
-        FROM backtest_results
-        ORDER BY sharpe_ratio DESC
+            br.symbol,
+            sc.candle_type,
+            sc.aggregation_days,
+            br.sharpe_ratio,
+            br.total_return,
+            br.max_drawdown,
+            br.total_trades
+        FROM backtest_results br
+        JOIN strategy_configs sc ON br.config_id = sc.id
+        ORDER BY br.sharpe_ratio DESC
         LIMIT 20
     """
 
