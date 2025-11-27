@@ -1,0 +1,112 @@
+# =============================================================================
+# Phase 3: Supertrend Trend-Following Strategy
+# =============================================================================
+# Objective: Test Supertrend indicator on same stocks as Phase 1 & 2
+# Hypothesis: Trend-following should work where mean reversion fails
+# Testing: 268 stocks × parameter combinations
+# =============================================================================
+
+phase: 3
+name: "Supertrend Trend-Following"
+description: "Test Supertrend strategy as complement to mean reversion"
+
+# Use regular 1-day candles (same as Phase 1 & 2)
+candle_configs:
+  - candle_type: "regular"
+    aggregation_days: 1
+
+# Supertrend parameter grid
+parameter_grid:
+  # ATR period for Supertrend calculation
+  atr_period: [7, 10, 14, 20]
+
+  # ATR multiplier for band width
+  # Lower = tighter bands (more sensitive, more trades)
+  # Higher = wider bands (less sensitive, fewer trades)
+  atr_multiplier: [2.0, 2.5, 3.0, 3.5, 4.0]
+
+  # Stop loss configuration
+  stop_loss_type:
+    - "none"              # No stop loss
+    - "atr"               # ATR-based stop loss
+
+  stop_loss_value:
+    - null                # No stop loss
+    - 2.0                 # 2× ATR stop loss
+    - 3.0                 # 3× ATR stop loss
+
+  # Profit target (optional)
+  profit_target:
+    - null                # No profit target (ride the trend)
+    - 0.10                # 10% profit target
+    - 0.20                # 20% profit target
+
+# Fixed parameters
+fixed_parameters:
+  position_sizing: "fixed"
+  position_size: 10000            # $10k per position
+
+# Stock selection - test on ALL stocks like Phase 1
+stocks:
+  count: 268
+  data_path: "data/raw/"
+
+# Backtest period - same as Phase 1 & 2
+backtest_period:
+  start_date: null                # Use first available date
+  end_date: null                  # Use last available date
+
+# Execution settings
+execution:
+  initial_capital: 100000
+  commission: 0.001               # 0.1% commission
+  slippage: 0.0
+
+  # Performance settings
+  parallel: false                 # Sequential to avoid overwhelming EC2
+  batch_size: 50
+  checkpoint_every: 500
+
+# Success criteria
+success_criteria:
+  min_sharpe: 0.5
+  min_return: 0.05
+  max_drawdown: 0.30
+  min_trades: 10                  # Trend following has fewer trades
+  min_win_rate: 0.40              # Lower win rate OK (asymmetric wins)
+
+  # Top configs to save
+  top_n: 20
+
+# Optimization settings
+optimization:
+  primary_metric: "sharpe_ratio"
+  secondary_metrics:
+    - "total_return"
+    - "calmar_ratio"              # Return / Max Drawdown
+    - "win_rate"
+
+  save_top_configs: 50
+
+# Output settings
+output:
+  save_to_database: true
+  results_dir: "data/results/phase_3"
+
+  generate_summary: true
+  summary_path: "data/results/phase_3/phase_3_summary.txt"
+
+  save_equity_curves: false
+  save_trade_logs: false
+  generate_heatmaps: true
+  heatmap_path: "data/results/phase_3/parameter_heatmaps/"
+
+# Logging
+logging:
+  level: "INFO"
+  log_to_file: true
+  log_file: "logs/phase_3.log"
+  progress_updates_every: 100
+
+  log_to_database: true
+  log_config_results: true
