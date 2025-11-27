@@ -227,36 +227,66 @@ class BacktestExecutor:
             True if successful
         """
         try:
-            query = """
+            import json
+
+            # Step 1: Create or get strategy_config
+            strategy_params = results.get('strategy_params', {})
+            config_name = f"{results['symbol']}_{results['candle_type']}_{results['aggregation_days']}d"
+
+            # Insert strategy config
+            config_query = """
+                INSERT INTO strategy_configs (
+                    config_name, phase,
+                    candle_type, aggregation_days,
+                    mean_type, mean_lookback, stddev_lookback, entry_threshold,
+                    exit_type, parameters
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                ON CONFLICT (config_name) DO UPDATE SET config_name = EXCLUDED.config_name
+                RETURNING id
+            """
+
+            config_params = (
+                config_name,
+                1,  # Phase 1
+                results['candle_type'],
+                results['aggregation_days'],
+                strategy_params.get('mean_type', 'SMA'),
+                strategy_params.get('mean_lookback', 20),
+                strategy_params.get('stddev_lookback', 20),
+                strategy_params.get('entry_threshold', 2.0),
+                strategy_params.get('exit_type', 'mean'),
+                json.dumps(strategy_params)
+            )
+
+            config_result = db_manager.execute_query(config_query, config_params)
+            config_id = config_result[0][0]
+
+            # Step 2: Insert backtest results
+            results_query = """
                 INSERT INTO backtest_results (
-                    symbol, candle_type, aggregation_days,
-                    strategy_params,
+                    config_id, symbol,
                     initial_capital, final_value, total_return, annualized_return,
                     sharpe_ratio, sortino_ratio, calmar_ratio,
                     max_drawdown, avg_drawdown, max_drawdown_duration,
                     total_trades, winning_trades, losing_trades, win_rate,
-                    avg_win, avg_loss, profit_factor,
-                    value_at_risk, conditional_var,
-                    created_at
+                    avg_win, avg_loss,
+                    profit_factor
                 )
                 VALUES (
-                    %s, %s, %s, %s::jsonb,
-                    %s, %s, %s, %s,
-                    %s, %s, %s,
-                    %s, %s, %s,
-                    %s, %s, %s, %s,
-                    %s, %s, %s,
                     %s, %s,
-                    NOW()
+                    %s, %s, %s, %s,
+                    %s, %s, %s,
+                    %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s,
+                    %s
                 )
             """
 
-            import json
-            params = (
+            results_params = (
+                config_id,
                 results['symbol'],
-                results['candle_type'],
-                results['aggregation_days'],
-                json.dumps(results.get('strategy_params', {})),
                 results['initial_capital'],
                 results['final_value'],
                 results['total_return'],
@@ -273,12 +303,10 @@ class BacktestExecutor:
                 results['win_rate'],
                 results.get('avg_win', 0),
                 results.get('avg_loss', 0),
-                results.get('profit_factor', 0),
-                results.get('value_at_risk', 0),
-                results.get('conditional_var', 0)
+                results.get('profit_factor', 0)
             )
 
-            db_manager.execute_query(query, params, fetch=False)
+            db_manager.execute_query(results_query, results_params, fetch=False)
 
             self.logger.info(f"Saved results for {results['symbol']}")
             return True
