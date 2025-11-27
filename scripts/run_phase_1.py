@@ -58,13 +58,14 @@ def get_candle_combinations(config: dict) -> list:
     return combinations
 
 
-def run_phase_1(config_path: str, limit_symbols: int = None):
+def run_phase_1(config_path: str, limit_symbols: int = None, specific_symbols: list = None):
     """
     Execute Phase 1 baseline testing.
 
     Args:
         config_path: Path to phase_1_config.yaml
         limit_symbols: Optional limit on number of symbols to test
+        specific_symbols: Optional list of specific symbols to test (e.g., ['NVDA', 'AAPL'])
     """
     logger.info("="*60)
     logger.info("PHASE 1: Baseline Candle Type Comparison")
@@ -89,13 +90,15 @@ def run_phase_1(config_path: str, limit_symbols: int = None):
     combinations = get_candle_combinations(config)
     logger.info(f"Testing {len(combinations)} candle combinations")
 
-    # Get available symbols
-    symbols = candle_loader.get_available_symbols(candle_type='regular', aggregation_days=1)
-
-    if limit_symbols:
-        symbols = symbols[:limit_symbols]
-
-    logger.info(f"Testing {len(symbols)} symbols")
+    # Get symbols to test
+    if specific_symbols:
+        symbols = specific_symbols
+        logger.info(f"Testing specific symbols: {', '.join(symbols)}")
+    else:
+        symbols = candle_loader.get_available_symbols(candle_type='regular', aggregation_days=1)
+        if limit_symbols:
+            symbols = symbols[:limit_symbols]
+        logger.info(f"Testing {len(symbols)} symbols")
 
     # Get fixed strategy parameters from config
     strategy_params = config['fixed_parameters']
@@ -255,7 +258,18 @@ if __name__ == '__main__':
         default=None,
         help='Limit number of symbols for testing'
     )
+    parser.add_argument(
+        '--symbols',
+        type=str,
+        default=None,
+        help='Comma-separated list of specific symbols to test (e.g., NVDA,AAPL,AMD)'
+    )
 
     args = parser.parse_args()
 
-    run_phase_1(config_path=args.config, limit_symbols=args.limit)
+    # Convert symbols string to list if provided
+    symbol_list = None
+    if args.symbols:
+        symbol_list = [s.strip().upper() for s in args.symbols.split(',')]
+
+    run_phase_1(config_path=args.config, limit_symbols=args.limit, specific_symbols=symbol_list)
