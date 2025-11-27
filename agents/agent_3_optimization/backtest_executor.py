@@ -89,7 +89,12 @@ class BacktestExecutor:
             cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
             cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
             cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
-            cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
+            cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe',
+                              timeframe=bt.TimeFrame.Days,
+                              compression=1,
+                              fund=True,
+                              annualize=True,
+                              riskfreerate=0.02)
 
             # Run backtest
             self.logger.info(f"Running backtest for {symbol} ({candle_type}, {aggregation_days}d)")
@@ -133,6 +138,32 @@ class BacktestExecutor:
                         sharpe_ratio = sharpe_value
             except (AttributeError, TypeError, KeyError):
                 pass
+
+            # Fallback: Calculate Sharpe manually if analyzer returned None/NaN
+            if sharpe_ratio == 0.0 or pd.isna(sharpe_ratio):
+                try:
+                    # Get daily returns from Returns analyzer
+                    returns_data = returns_analysis.get('rnorm100', None)
+                    if returns_data and len(returns_data) > 1:
+                        # Convert to pandas Series for easy calculation
+                        returns_series = pd.Series(list(returns_data.values()))
+                        if len(returns_series) > 0 and returns_series.std() > 0:
+                            # Annualized Sharpe: (mean - rf) / std * sqrt(252)
+                            mean_daily_return = returns_series.mean()
+                            std_daily_return = returns_series.std()
+                            risk_free_daily = 0.02 / 252  # 2% annual -> daily
+                            sharpe_ratio = (mean_daily_return - risk_free_daily) / std_daily_return * (252 ** 0.5)
+                except (AttributeError, TypeError, ZeroDivisionError):
+                    # If manual calculation fails, use simplified approximation
+                    # Sharpe ≈ Annualized Return / Annualized Volatility (using max DD as proxy)
+                    if max_drawdown_pct > 0:
+                        num_days = len(candle_df)
+                        years = num_days / 252.0
+                        if years > 0:
+                            annualized_return = ((1 + total_return) ** (1/years)) - 1
+                            sharpe_ratio = (annualized_return - 0.02) / max_drawdown_pct
+                    else:
+                        sharpe_ratio = 0.0
 
             # Build metrics dictionary directly from analyzer results
             metrics = {
