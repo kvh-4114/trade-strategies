@@ -233,15 +233,15 @@ class BacktestExecutor:
             strategy_params = results.get('strategy_params', {})
             config_name = f"{results['symbol']}_{results['candle_type']}_{results['aggregation_days']}d"
 
-            # Insert strategy config
+            # Insert strategy config (only using columns that exist in table)
             config_query = """
                 INSERT INTO strategy_configs (
                     config_name, phase,
                     candle_type, aggregation_days,
                     mean_type, mean_lookback, stddev_lookback, entry_threshold,
-                    exit_type, parameters
+                    parameters
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
                 ON CONFLICT (config_name) DO UPDATE SET config_name = EXCLUDED.config_name
                 RETURNING id
             """
@@ -255,8 +255,7 @@ class BacktestExecutor:
                 strategy_params.get('mean_lookback', 20),
                 strategy_params.get('stddev_lookback', 20),
                 strategy_params.get('entry_threshold', 2.0),
-                strategy_params.get('exit_type', 'mean'),
-                json.dumps(strategy_params)
+                json.dumps(strategy_params)  # Store all params including exit_type in JSONB
             )
 
             config_result = db_manager.execute_query(config_query, config_params)
