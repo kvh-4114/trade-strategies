@@ -260,9 +260,15 @@ class BacktestExecutor:
             )
 
             config_result = db_manager.execute_query(config_query, config_params)
-            config_id = config_result[0][0]
 
-            # Step 2: Insert backtest results
+            # Verify config was created and we got an ID back
+            if not config_result or len(config_result) == 0:
+                raise Exception("Failed to create strategy_config - no ID returned")
+
+            config_id = config_result[0][0]
+            self.logger.debug(f"Created strategy_config ID: {config_id}")
+
+            # Step 2: Insert backtest results with RETURNING to verify
             results_query = """
                 INSERT INTO backtest_results (
                     config_id, symbol,
@@ -282,6 +288,7 @@ class BacktestExecutor:
                     %s, %s,
                     %s
                 )
+                RETURNING id
             """
 
             results_params = (
@@ -306,9 +313,15 @@ class BacktestExecutor:
                 results.get('profit_factor', 0)
             )
 
-            db_manager.execute_query(results_query, results_params, fetch=False)
+            result_insert = db_manager.execute_query(results_query, results_params)
 
-            self.logger.info(f"Saved results for {results['symbol']}")
+            # Verify insert succeeded
+            if not result_insert or len(result_insert) == 0:
+                raise Exception("Failed to insert backtest_results - no ID returned")
+
+            result_id = result_insert[0][0]
+            self.logger.info(f"✅ Saved {results['symbol']} (config={config_id}, result={result_id})")
+
             return True
 
         except Exception as e:
