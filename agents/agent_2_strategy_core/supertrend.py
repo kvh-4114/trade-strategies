@@ -67,6 +67,10 @@ class Supertrend(bt.Indicator):
         hl_avg = (self.data.high[0] + self.data.low[0]) / 2.0
         atr = self.atr[0]
 
+        # Skip if ATR is not ready (NaN or 0)
+        if not atr or atr != atr:  # atr != atr checks for NaN
+            return
+
         basic_upper = hl_avg + (self.params.multiplier * atr)
         basic_lower = hl_avg - (self.params.multiplier * atr)
 
