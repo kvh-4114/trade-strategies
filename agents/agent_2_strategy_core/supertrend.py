@@ -88,12 +88,11 @@ class Supertrend(bt.Indicator):
         self.final_upper[0] = final_upper
         self.final_lower[0] = final_lower
 
-        # Debug: Print first few bars to verify ATR and bands are different
-        if len(self) <= 5:
-            print(f"DEBUG SuperTrend Bar {len(self)} (period={self.params.period}, mult={self.params.multiplier}): "
-                  f"ATR={atr:.4f}, "
-                  f"basic_upper={basic_upper:.2f}, basic_lower={basic_lower:.2f}, "
-                  f"band_width={basic_upper - basic_lower:.2f}")
+        # Debug: Print direction changes to verify they match manual calculation
+        if len(self) > 1:
+            if self.direction[0] != self.direction[-1]:
+                print(f"Bar {len(self)}: DIRECTION CHANGE {self.direction[-1]:.0f} -> {self.direction[0]:.0f}, "
+                      f"close=${close:.2f}, final_lower=${final_lower:.2f}, final_upper=${final_upper:.2f}")
 
         # Step 3: Determine Supertrend value and direction
         close = self.data.close[0]
