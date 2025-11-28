@@ -4,6 +4,7 @@ Combines ATR (Average True Range) with price to create trend-following signals
 """
 
 import backtrader as bt
+import math
 
 
 class Supertrend(bt.Indicator):
@@ -67,8 +68,11 @@ class Supertrend(bt.Indicator):
         hl_avg = (self.data.high[0] + self.data.low[0]) / 2.0
         atr = self.atr[0]
 
-        # Skip if ATR is not ready (NaN or 0)
-        if not atr or atr != atr:  # atr != atr checks for NaN
+        # Skip if ATR is not ready (NaN, None, or <= 0)
+        if atr is None or math.isnan(atr) or atr <= 0:
+            # Debug: Show why we're skipping
+            if len(self) <= 35:
+                print(f"Bar {len(self)}: Skipping - ATR={atr}")
             return
 
         basic_upper = hl_avg + (self.params.multiplier * atr)
