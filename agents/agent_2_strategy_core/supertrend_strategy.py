@@ -80,19 +80,17 @@ class SupertrendStrategy(bt.Strategy):
         # Check if we have a position
         if not self.position:
             # Entry logic: Enter when in uptrend (direction = 1)
-            # This captures the entire trend, not just the first bar
+            # Supertrend direction=1 means price is in uptrend above the indicator line
             if self.supertrend.direction[0] == 1:
-                # Confirm: Price is above Supertrend line
-                if self.data.close[0] > self.supertrend.supertrend[0]:
-                    # Calculate position size
-                    size = self._calculate_position_size()
+                # Calculate position size
+                size = self._calculate_position_size()
 
-                    # Place buy order
-                    self.order = self.buy(size=size)
-                    self.entry_price = self.data.close[0]
+                # Place buy order
+                self.order = self.buy(size=size)
+                self.entry_price = self.data.close[0]
 
-                    if self.params.log_trades:
-                        self.log(f'BUY SIGNAL: Uptrend active, price above Supertrend')
+                if self.params.log_trades:
+                    self.log(f'BUY SIGNAL: Supertrend uptrend (dir=1)')
 
         else:
             # Exit logic
