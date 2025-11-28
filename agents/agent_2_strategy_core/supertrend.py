@@ -88,6 +88,14 @@ class Supertrend(bt.Indicator):
         self.final_upper[0] = final_upper
         self.final_lower[0] = final_lower
 
+        # Debug: Print first few bars to diagnose NaN
+        if len(self) <= 3:
+            print(f"DEBUG SuperTrend Bar {len(self)}: "
+                  f"basic_upper={basic_upper:.2f}, basic_lower={basic_lower:.2f}, "
+                  f"final_upper={final_upper:.2f}, final_lower={final_lower:.2f}, "
+                  f"stored final_upper[0]={self.final_upper[0]:.2f}, "
+                  f"stored final_lower[0]={self.final_lower[0]:.2f}")
+
         # Step 3: Determine Supertrend value and direction
         close = self.data.close[0]
 
@@ -100,8 +108,10 @@ class Supertrend(bt.Indicator):
                 self.direction[0] = 1
                 self.supertrend[0] = final_lower
         else:
-            # Use previous direction to determine current
-            if self.supertrend[-1] == self.final_upper[-1]:
+            # Use previous direction (more reliable than comparing floats)
+            prev_direction = self.direction[-1]
+
+            if prev_direction == -1:
                 # Was in downtrend (using upper band)
                 if close <= final_upper:
                     self.direction[0] = -1
