@@ -42,7 +42,8 @@ result1 = run_supertrend_backtest(
     symbol='NVDA',
     strategy_params=params1,
     initial_capital=100000,
-    commission=0.001
+    commission=0.001,
+    runonce=False  # Disable runonce to see debug output
 )
 
 print(f"\nRESULT 1: Return={result1['total_return']*100:.2f}%, Trades={result1['total_trades']}")
@@ -67,7 +68,8 @@ result2 = run_supertrend_backtest(
     symbol='NVDA',
     strategy_params=params2,
     initial_capital=100000,
-    commission=0.001
+    commission=0.001,
+    runonce=False  # Disable runonce to see debug output
 )
 
 print(f"\nRESULT 2: Return={result2['total_return']*100:.2f}%, Trades={result2['total_trades']}")

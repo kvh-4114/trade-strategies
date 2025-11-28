@@ -84,9 +84,12 @@ def generate_parameter_combinations(param_grid: dict) -> list:
     return combinations
 
 
-def run_supertrend_backtest(candle_df, symbol, strategy_params, initial_capital=100000, commission=0.001):
+def run_supertrend_backtest(candle_df, symbol, strategy_params, initial_capital=100000, commission=0.001, runonce=True):
     """
     Run a single Supertrend backtest.
+
+    Args:
+        runonce: If True, use Backtrader's optimized runonce mode (default). Set to False to enable debug output.
 
     Returns:
         Dictionary with results
@@ -139,7 +142,7 @@ def run_supertrend_backtest(candle_df, symbol, strategy_params, initial_capital=
 
         # Run backtest
         start_value = cerebro.broker.getvalue()
-        results = cerebro.run()
+        results = cerebro.run(runonce=runonce)
         end_value = cerebro.broker.getvalue()
 
         # Extract strategy instance
