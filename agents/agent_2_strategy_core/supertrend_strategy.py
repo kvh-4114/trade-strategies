@@ -79,13 +79,6 @@ class SupertrendStrategy(bt.Strategy):
         self.winning_trades = 0
         self.losing_trades = 0
 
-        # DEBUG: Track exit reasons
-        self.exit_reasons = {
-            'stop_loss': 0,
-            'profit_target': 0,
-            'trend_reversal': 0
-        }
-
     def next(self):
         """Main strategy logic called for each bar"""
 
@@ -139,27 +132,23 @@ class SupertrendStrategy(bt.Strategy):
 
             if self.params.stop_loss_type == 'fixed_pct':
                 if self.params.stop_loss_value and loss_pct <= self.params.stop_loss_value:
-                    self.exit_reasons['stop_loss'] += 1
                     return f"Stop loss hit ({loss_pct:.1%})"
 
             elif self.params.stop_loss_type == 'atr':
                 if self.params.stop_loss_value:
                     stop_distance = self.params.stop_loss_value * self.atr[0]
                     if close <= (self.entry_price - stop_distance):
-                        self.exit_reasons['stop_loss'] += 1
                         return f"ATR stop loss hit"
 
         # PRIORITY 2: Profit target (take profits when reached)
         if self.params.profit_target and self.entry_price:
             profit_pct = (close - self.entry_price) / self.entry_price
             if profit_pct >= self.params.profit_target:
-                self.exit_reasons['profit_target'] += 1
                 return f"Profit target reached ({profit_pct:.1%})"
 
         # PRIORITY 3: Trend reversal (only exit if trend changes to downtrend)
         # Removed "price below Supertrend" check - let the position breathe in trend
         if len(self) > 1 and direction == -1 and self.supertrend.direction[-1] == 1:
-            self.exit_reasons['trend_reversal'] += 1
             return "Trend reversal (downtrend started)"
 
         return None
@@ -245,11 +234,3 @@ class SupertrendStrategy(bt.Strategy):
                 f'Trades={self.trade_count}, '
                 f'Win Rate={win_rate:.1f}%'
             )
-
-        # DEBUG: Print exit reason summary
-        print(f"\n=== EXIT REASONS ===")
-        print(f"Stop Loss: {self.exit_reasons['stop_loss']}")
-        print(f"Profit Target: {self.exit_reasons['profit_target']}")
-        print(f"Trend Reversal: {self.exit_reasons['trend_reversal']}")
-        print(f"Total Exits: {sum(self.exit_reasons.values())}")
-        print(f"====================\n")

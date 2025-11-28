@@ -93,13 +93,6 @@ class DebugSupertrendStrategy(SupertrendStrategy):
         self.winning_trades = 0
         self.losing_trades = 0
 
-        # Track exit reasons
-        self.exit_reasons = {
-            'stop_loss': 0,
-            'profit_target': 0,
-            'trend_reversal': 0
-        }
-
 
 def test_supertrend_single_symbol(symbol='NVDA', test_db_write=True):
     """
