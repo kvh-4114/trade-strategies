@@ -88,12 +88,6 @@ class Supertrend(bt.Indicator):
         self.final_upper[0] = final_upper
         self.final_lower[0] = final_lower
 
-        # Debug: Print direction changes to verify they match manual calculation
-        if len(self) > 1:
-            if self.direction[0] != self.direction[-1]:
-                print(f"Bar {len(self)}: DIRECTION CHANGE {self.direction[-1]:.0f} -> {self.direction[0]:.0f}, "
-                      f"close=${close:.2f}, final_lower=${final_lower:.2f}, final_upper=${final_upper:.2f}")
-
         # Step 3: Determine Supertrend value and direction
         close = self.data.close[0]
 
@@ -125,3 +119,9 @@ class Supertrend(bt.Indicator):
                 else:
                     self.direction[0] = 1
                     self.supertrend[0] = final_lower
+
+        # Debug: Print direction changes to verify they match manual calculation
+        if len(self) > 1:
+            if self.direction[0] != prev_direction:
+                print(f"Bar {len(self)}: DIRECTION CHANGE {prev_direction:.0f} -> {self.direction[0]:.0f}, "
+                      f"close=${close:.2f}, final_lower=${final_lower:.2f}, final_upper=${final_upper:.2f}")
