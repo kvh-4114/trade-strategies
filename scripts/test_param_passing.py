@@ -10,14 +10,18 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 sys.path.insert(0, parent_dir)
 
-# Import from the same directory
-sys.path.insert(0, script_dir)
-from run_phase_3_supertrend import run_supertrend_backtest, load_candle_data
+# Import required modules
+from run_phase_3_supertrend import run_supertrend_backtest
+from agents.agent_3_optimization.candle_loader import CandleLoader
+from database.db import Database
 
-# Load NVDA data
-print("Loading NVDA data...")
-candle_df = load_candle_data('NVDA', start_date='2020-01-01', end_date='2025-11-28')
+# Load NVDA data from database
+print("Loading NVDA data from database...")
+db = Database()
+candle_loader = CandleLoader(db)
+candle_df = candle_loader.load_candles('NVDA', candle_type='regular', aggregation_days=1)
 print(f"Loaded {len(candle_df)} bars")
+db.close()
 
 # Test Config 1: ATR 14, Multiplier 3.0, No exits
 print("\n" + "="*80)
