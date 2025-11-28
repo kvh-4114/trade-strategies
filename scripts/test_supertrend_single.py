@@ -181,7 +181,10 @@ def test_supertrend_single_symbol(symbol='NVDA', test_db_write=True):
     print(f"\n3. Running Supertrend backtest...")
     print("-"*100)
     start_value = cerebro.broker.getvalue()
-    results = cerebro.run()
+
+    # Disable runonce mode to avoid attribute access issues
+    results = cerebro.run(runonce=False)
+
     end_value = cerebro.broker.getvalue()
     print("-"*100)
 
