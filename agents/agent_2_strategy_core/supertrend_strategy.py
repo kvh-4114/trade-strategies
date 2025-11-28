@@ -106,28 +106,18 @@ class SupertrendStrategy(bt.Strategy):
         """
         Check various exit conditions.
 
+        Priority order (higher priority first):
+        1. Stop loss (protect capital)
+        2. Profit target (take profits)
+        3. Trend reversal (exit on trend change)
+
         Returns:
             String describing exit reason, or None
         """
         close = self.data.close[0]
-        supertrend_value = self.supertrend.supertrend[0]
         direction = self.supertrend.direction[0]
 
-        # Exit 1: Trend reversal (direction changes to downtrend)
-        if len(self) > 1 and direction == -1 and self.supertrend.direction[-1] == 1:
-            return "Trend reversal (downtrend started)"
-
-        # Exit 2: Price crosses below Supertrend line
-        if close < supertrend_value:
-            return "Price below Supertrend"
-
-        # Exit 3: Profit target
-        if self.params.profit_target and self.entry_price:
-            profit_pct = (close - self.entry_price) / self.entry_price
-            if profit_pct >= self.params.profit_target:
-                return f"Profit target reached ({profit_pct:.1%})"
-
-        # Exit 4: Stop loss
+        # PRIORITY 1: Stop loss (check first to protect capital)
         if self.entry_price:
             loss_pct = (close - self.entry_price) / self.entry_price
 
@@ -140,6 +130,17 @@ class SupertrendStrategy(bt.Strategy):
                     stop_distance = self.params.stop_loss_value * self.atr[0]
                     if close <= (self.entry_price - stop_distance):
                         return f"ATR stop loss hit"
+
+        # PRIORITY 2: Profit target (take profits when reached)
+        if self.params.profit_target and self.entry_price:
+            profit_pct = (close - self.entry_price) / self.entry_price
+            if profit_pct >= self.params.profit_target:
+                return f"Profit target reached ({profit_pct:.1%})"
+
+        # PRIORITY 3: Trend reversal (only exit if trend changes to downtrend)
+        # Removed "price below Supertrend" check - let the position breathe in trend
+        if len(self) > 1 and direction == -1 and self.supertrend.direction[-1] == 1:
+            return "Trend reversal (downtrend started)"
 
         return None
 
