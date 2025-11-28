@@ -125,7 +125,7 @@ def run_supertrend_backtest(candle_df, symbol, strategy_params, initial_capital=
         cerebro.adddata(data_feed, name=symbol)
 
         # Add strategy with parameters
-        cerebro.addstrategy(SupertrendStrategy, **strategy_params, log_trades=False)
+        cerebro.addstrategy(SupertrendStrategy, **strategy_params)
 
         # Add analyzers
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
