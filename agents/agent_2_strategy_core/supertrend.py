@@ -88,13 +88,12 @@ class Supertrend(bt.Indicator):
         self.final_upper[0] = final_upper
         self.final_lower[0] = final_lower
 
-        # Debug: Print first few bars to diagnose NaN
-        if len(self) <= 3:
-            print(f"DEBUG SuperTrend Bar {len(self)}: "
+        # Debug: Print first few bars to verify ATR and bands are different
+        if len(self) <= 5:
+            print(f"DEBUG SuperTrend Bar {len(self)} (period={self.params.period}, mult={self.params.multiplier}): "
+                  f"ATR={atr:.4f}, "
                   f"basic_upper={basic_upper:.2f}, basic_lower={basic_lower:.2f}, "
-                  f"final_upper={final_upper:.2f}, final_lower={final_lower:.2f}, "
-                  f"stored final_upper[0]={self.final_upper[0]:.2f}, "
-                  f"stored final_lower[0]={self.final_lower[0]:.2f}")
+                  f"band_width={basic_upper - basic_lower:.2f}")
 
         # Step 3: Determine Supertrend value and direction
         close = self.data.close[0]
