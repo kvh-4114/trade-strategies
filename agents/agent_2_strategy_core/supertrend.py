@@ -78,11 +78,17 @@ class Supertrend(bt.Indicator):
         basic_upper = hl_avg + (self.params.multiplier * atr)
         basic_lower = hl_avg - (self.params.multiplier * atr)
 
+        # Debug: Print first valid calculations
+        if len(self) <= 2:
+            print(f"Bar {len(self)}: ATR={atr:.4f}, hl_avg={hl_avg:.2f}, "
+                  f"basic_upper={basic_upper:.2f}, basic_lower={basic_lower:.2f}")
+
         # Step 2: Calculate final bands
         if len(self) == 1:
             # First bar - initialize
             final_upper = basic_upper
             final_lower = basic_lower
+            print(f"Bar {len(self)}: Initializing final bands: upper={final_upper:.2f}, lower={final_lower:.2f}")
         else:
             # Update final upper band
             final_upper = basic_upper if (basic_upper < self.final_upper[-1] or
