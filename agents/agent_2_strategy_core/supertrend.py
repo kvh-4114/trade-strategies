@@ -64,60 +64,56 @@ class Supertrend(bt.Indicator):
         """Calculate Supertrend value for current bar using standard algorithm."""
 
         # Step 1: Calculate basic bands
-        basic_upper = self.basic_band[0] + (self.params.multiplier * self.atr[0])
-        basic_lower = self.basic_band[0] - (self.params.multiplier * self.atr[0])
+        hl_avg = (self.data.high[0] + self.data.low[0]) / 2.0
+        atr = self.atr[0]
 
-        # Step 2: Calculate final bands (with smoothing)
+        basic_upper = hl_avg + (self.params.multiplier * atr)
+        basic_lower = hl_avg - (self.params.multiplier * atr)
+
+        # Step 2: Calculate final bands
         if len(self) == 1:
             # First bar - initialize
-            self.final_upper[0] = basic_upper
-            self.final_lower[0] = basic_lower
+            final_upper = basic_upper
+            final_lower = basic_lower
         else:
-            prev_close = self.data.close[-1]
+            # Update final upper band
+            final_upper = basic_upper if (basic_upper < self.final_upper[-1] or
+                                          self.data.close[-1] > self.final_upper[-1]) else self.final_upper[-1]
 
-            # Final upper band: use new band if it decreased OR if previous close broke above previous final upper
-            if basic_upper < self.final_upper[-1] or prev_close > self.final_upper[-1]:
-                self.final_upper[0] = basic_upper
-            else:
-                self.final_upper[0] = self.final_upper[-1]
+            # Update final lower band
+            final_lower = basic_lower if (basic_lower > self.final_lower[-1] or
+                                          self.data.close[-1] < self.final_lower[-1]) else self.final_lower[-1]
 
-            # Final lower band: use new band if it increased OR if previous close broke below previous final lower
-            if basic_lower > self.final_lower[-1] or prev_close < self.final_lower[-1]:
-                self.final_lower[0] = basic_lower
-            else:
-                self.final_lower[0] = self.final_lower[-1]
+        # Store final bands
+        self.final_upper[0] = final_upper
+        self.final_lower[0] = final_lower
 
-        # Step 3: Determine direction based on current close vs final bands
+        # Step 3: Determine Supertrend value and direction
         close = self.data.close[0]
 
         if len(self) == 1:
-            # First bar - assume uptrend
-            if close >= self.final_lower[0]:
-                self.direction[0] = 1
-                self.supertrend[0] = self.final_lower[0]
-            else:
+            # First bar - start in uptrend if close is above lower band
+            if close <= final_upper:
                 self.direction[0] = -1
-                self.supertrend[0] = self.final_upper[0]
-        else:
-            prev_direction = self.direction[-1]
-
-            if prev_direction == 1:
-                # Was in uptrend
-                if close <= self.final_lower[0]:
-                    # Close dropped below lower band - switch to downtrend
-                    self.direction[0] = -1
-                    self.supertrend[0] = self.final_upper[0]
-                else:
-                    # Stay in uptrend
-                    self.direction[0] = 1
-                    self.supertrend[0] = self.final_lower[0]
+                self.supertrend[0] = final_upper
             else:
-                # Was in downtrend
-                if close >= self.final_upper[0]:
-                    # Close rose above upper band - switch to uptrend
-                    self.direction[0] = 1
-                    self.supertrend[0] = self.final_lower[0]
-                else:
-                    # Stay in downtrend
+                self.direction[0] = 1
+                self.supertrend[0] = final_lower
+        else:
+            # Use previous direction to determine current
+            if self.supertrend[-1] == self.final_upper[-1]:
+                # Was in downtrend (using upper band)
+                if close <= final_upper:
                     self.direction[0] = -1
-                    self.supertrend[0] = self.final_upper[0]
+                    self.supertrend[0] = final_upper
+                else:
+                    self.direction[0] = 1
+                    self.supertrend[0] = final_lower
+            else:
+                # Was in uptrend (using lower band)
+                if close >= final_lower:
+                    self.direction[0] = 1
+                    self.supertrend[0] = final_lower
+                else:
+                    self.direction[0] = -1
+                    self.supertrend[0] = final_upper
