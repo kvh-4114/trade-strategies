@@ -3,9 +3,16 @@ Test if strategy parameters are actually being varied across runs
 """
 
 import sys
-sys.path.insert(0, '/home/user/trade-strategies')
+import os
 
-from scripts.run_phase_3_supertrend import run_supertrend_backtest, load_candle_data
+# Add parent directory to path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(script_dir)
+sys.path.insert(0, parent_dir)
+
+# Import from the same directory
+sys.path.insert(0, script_dir)
+from run_phase_3_supertrend import run_supertrend_backtest, load_candle_data
 
 # Load NVDA data
 print("Loading NVDA data...")
