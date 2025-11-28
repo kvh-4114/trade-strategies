@@ -19,10 +19,8 @@ from agents.agent_2_strategy_core.supertrend_strategy import SupertrendStrategy
 from agents.agent_2_strategy_core.supertrend import Supertrend
 
 
-class DebugSupertrend(bt.Indicator):
+class DebugSupertrend(Supertrend):
     """Debug version of Supertrend that prints values."""
-
-    lines = ('supertrend', 'direction', 'upper', 'lower')
 
     params = (
         ('period', 10),
@@ -31,59 +29,33 @@ class DebugSupertrend(bt.Indicator):
     )
 
     def __init__(self):
-        self.atr = bt.indicators.AverageTrueRange(self.data, period=self.params.period)
-        self.basic_band = (self.data.high + self.data.low) / 2
-        self.addminperiod(self.params.period)
-
-        # Track for debugging
+        super().__init__()
         self.bar_count = 0
 
     def next(self):
-        """Calculate Supertrend with debug output."""
+        """Calculate Supertrend with debug output using FIXED algorithm."""
         self.bar_count += 1
 
-        # Calculate bands
-        upper_band = self.basic_band[0] + (self.params.multiplier * self.atr[0])
-        lower_band = self.basic_band[0] - (self.params.multiplier * self.atr[0])
-
-        self.upper[0] = upper_band
-        self.lower[0] = lower_band
-
-        # Get previous values
-        if len(self) == 1:
-            prev_supertrend = lower_band
-            prev_direction = 1
-        else:
-            prev_supertrend = self.supertrend[-1]
-            prev_direction = self.direction[-1]
-
+        # Store values before calling parent
         close = self.data.close[0]
+        basic_upper = self.basic_band[0] + (self.params.multiplier * self.atr[0])
+        basic_lower = self.basic_band[0] - (self.params.multiplier * self.atr[0])
 
-        # Determine current direction
-        if prev_direction == 1:
-            # Currently in uptrend
-            if close > lower_band:
-                self.direction[0] = 1
-                self.supertrend[0] = max(lower_band, prev_supertrend)
-            else:
-                self.direction[0] = -1
-                self.supertrend[0] = upper_band
+        if len(self) > 1:
+            prev_direction = self.direction[-1]
         else:
-            # Currently in downtrend
-            if close < upper_band:
-                self.direction[0] = -1
-                self.supertrend[0] = min(upper_band, prev_supertrend)
-            else:
-                self.direction[0] = 1
-                self.supertrend[0] = lower_band
+            prev_direction = None
 
-        # Debug output for first 20 bars and transitions
-        if self.params.debug and (self.bar_count <= 20 or prev_direction != self.direction[0]):
+        # Call parent to do the actual calculation
+        super().next()
+
+        # Debug output for first 30 bars and transitions
+        if self.params.debug and (self.bar_count <= 30 or (prev_direction is not None and prev_direction != self.direction[0])):
             date = self.data.datetime.date(0)
             print(f"Bar {self.bar_count:4d} | {date} | Close: ${close:6.2f} | "
-                  f"Lower: ${lower_band:6.2f} | Upper: ${upper_band:6.2f} | "
-                  f"Prev Dir: {prev_direction:2.0f} | New Dir: {self.direction[0]:2.0f} | "
-                  f"ST: ${self.supertrend[0]:6.2f}")
+                  f"FinalLower: ${self.final_lower[0]:6.2f} | FinalUpper: ${self.final_upper[0]:6.2f} | "
+                  f"Prev Dir: {prev_direction if prev_direction is not None else 'N/A':>3} | "
+                  f"New Dir: {self.direction[0]:2.0f} | ST: ${self.supertrend[0]:6.2f}")
 
 
 class DebugSupertrendStrategy(SupertrendStrategy):
