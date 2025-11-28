@@ -100,29 +100,29 @@ class Supertrend(bt.Indicator):
 
         if len(self) == 1:
             # First bar - start in uptrend if close is above lower band
-            if close <= final_upper:
-                self.direction[0] = -1
-                self.supertrend[0] = final_upper
-            else:
+            if close > final_lower:
                 self.direction[0] = 1
                 self.supertrend[0] = final_lower
+            else:
+                self.direction[0] = -1
+                self.supertrend[0] = final_upper
         else:
-            # Use previous direction (more reliable than comparing floats)
+            # Use previous direction
             prev_direction = self.direction[-1]
 
             if prev_direction == -1:
-                # Was in downtrend (using upper band)
-                if close <= final_upper:
-                    self.direction[0] = -1
-                    self.supertrend[0] = final_upper
-                else:
+                # Was in downtrend - switch to uptrend if close crosses above final_upper
+                if close > final_upper:
                     self.direction[0] = 1
                     self.supertrend[0] = final_lower
+                else:
+                    self.direction[0] = -1
+                    self.supertrend[0] = final_upper
             else:
-                # Was in uptrend (using lower band)
-                if close >= final_lower:
-                    self.direction[0] = 1
-                    self.supertrend[0] = final_lower
-                else:
+                # Was in uptrend - switch to downtrend if close crosses below final_lower
+                if close < final_lower:
                     self.direction[0] = -1
                     self.supertrend[0] = final_upper
+                else:
+                    self.direction[0] = 1
+                    self.supertrend[0] = final_lower
