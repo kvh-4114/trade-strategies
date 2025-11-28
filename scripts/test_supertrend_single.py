@@ -63,6 +63,15 @@ class DebugSupertrendStrategy(SupertrendStrategy):
 
     def __init__(self):
         """Initialize with debug indicator."""
+        # DEBUG: Print parameters
+        print(f"\n=== STRATEGY INIT (DEBUG) ===")
+        print(f"ATR Period: {self.params.atr_period}")
+        print(f"ATR Multiplier: {self.params.atr_multiplier}")
+        print(f"Stop Loss Type: {self.params.stop_loss_type}")
+        print(f"Stop Loss Value: {self.params.stop_loss_value}")
+        print(f"Profit Target: {self.params.profit_target}")
+        print(f"=============================\n")
+
         # Use debug Supertrend
         self.supertrend = DebugSupertrend(
             self.data,
@@ -83,6 +92,13 @@ class DebugSupertrendStrategy(SupertrendStrategy):
         self.trade_count = 0
         self.winning_trades = 0
         self.losing_trades = 0
+
+        # Track exit reasons
+        self.exit_reasons = {
+            'stop_loss': 0,
+            'profit_target': 0,
+            'trend_reversal': 0
+        }
 
 
 def test_supertrend_single_symbol(symbol='NVDA', test_db_write=True):
