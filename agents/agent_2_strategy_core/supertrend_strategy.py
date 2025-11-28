@@ -94,9 +94,8 @@ class SupertrendStrategy(bt.Strategy):
                 # Calculate position size
                 size = self._calculate_position_size()
 
-                # Place buy order
+                # Place buy order (entry_price will be set in notify_order when filled)
                 self.order = self.buy(size=size)
-                self.entry_price = self.data.close[0]
 
                 if self.params.log_trades:
                     self.log(f'BUY SIGNAL: Supertrend uptrend (dir=1)')
@@ -126,9 +125,15 @@ class SupertrendStrategy(bt.Strategy):
         close = self.data.close[0]
         direction = self.supertrend.direction[0]
 
+        # DEBUG: Track exit condition checks
+        debug_exit = False  # Set to True to see why exits aren't triggering
+
         # PRIORITY 1: Stop loss (check first to protect capital)
         if self.entry_price:
             loss_pct = (close - self.entry_price) / self.entry_price
+
+            if debug_exit:
+                print(f"  Entry: ${self.entry_price:.2f}, Close: ${close:.2f}, Loss%: {loss_pct:.2%}")
 
             if self.params.stop_loss_type == 'fixed_pct':
                 if self.params.stop_loss_value and loss_pct <= self.params.stop_loss_value:
@@ -137,12 +142,16 @@ class SupertrendStrategy(bt.Strategy):
             elif self.params.stop_loss_type == 'atr':
                 if self.params.stop_loss_value:
                     stop_distance = self.params.stop_loss_value * self.atr[0]
+                    if debug_exit:
+                        print(f"  ATR SL: entry=${self.entry_price:.2f}, stop_dist=${stop_distance:.2f}, trigger=${self.entry_price - stop_distance:.2f}, close=${close:.2f}")
                     if close <= (self.entry_price - stop_distance):
                         return f"ATR stop loss hit"
 
         # PRIORITY 2: Profit target (take profits when reached)
         if self.params.profit_target and self.entry_price:
             profit_pct = (close - self.entry_price) / self.entry_price
+            if debug_exit:
+                print(f"  Profit%: {profit_pct:.2%}, Target: {self.params.profit_target:.2%}")
             if profit_pct >= self.params.profit_target:
                 return f"Profit target reached ({profit_pct:.1%})"
 
@@ -193,6 +202,8 @@ class SupertrendStrategy(bt.Strategy):
                         f'Value=${order.executed.value:.2f}, '
                         f'Comm=${order.executed.comm:.2f}'
                     )
+                # Reset entry price after selling
+                self.entry_price = None
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             if self.params.log_trades:
