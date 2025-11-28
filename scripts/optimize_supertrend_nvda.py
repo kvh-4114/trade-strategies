@@ -20,15 +20,15 @@ from scripts.run_phase_3_supertrend import run_supertrend_backtest, save_results
 
 
 def generate_parameter_grid():
-    """Generate comprehensive parameter grid for optimization."""
+    """Generate parameter grid optimized for trend-following on NVDA."""
 
-    # More granular parameter ranges for optimization
+    # Focus on parameters that capture long trends (not whipsaws)
     param_grid = {
-        'atr_period': [7, 10, 14, 20],
-        'atr_multiplier': [1.5, 2.0, 2.5, 3.0, 3.5, 4.0],
+        'atr_period': [14, 20, 30],  # Longer periods = smoother
+        'atr_multiplier': [3.0, 4.0, 5.0, 6.0],  # Wider bands = fewer reversals
         'stop_loss_type': ['none', 'atr'],
-        'stop_loss_value': [None, 1.5, 2.0, 3.0],
-        'profit_target': [None, 0.10, 0.15, 0.20, 0.30],
+        'stop_loss_value': [None, 2.0, 3.0],  # Only test meaningful stop losses
+        'profit_target': [None, 0.50, 1.00, 2.00],  # Let winners run MUCH longer
     }
 
     combinations = []
@@ -167,8 +167,8 @@ def optimize_nvda():
         print(f"ATR Multiplier:  {best['strategy_params']['atr_multiplier']}")
         print(f"Stop Loss:       {best['strategy_params']['stop_loss_type']} "
               f"({best['strategy_params']['stop_loss_value']} if applicable)")
-        print(f"Profit Target:   {best['strategy_params']['profit_target']*100:.0f}% "
-              f"if best['strategy_params']['profit_target'] else 'None'")
+        pt_str = f"{best['strategy_params']['profit_target']*100:.0f}%" if best['strategy_params']['profit_target'] else 'None'
+        print(f"Profit Target:   {pt_str}")
         print(f"\nReturn:          {best['total_return']*100:.2f}%")
         print(f"Sharpe Ratio:    {best['sharpe_ratio']:.2f}")
         print(f"Max Drawdown:    {best['max_drawdown']*100:.1f}%")
