@@ -13,15 +13,14 @@ sys.path.insert(0, parent_dir)
 # Import required modules
 from run_phase_3_supertrend import run_supertrend_backtest
 from agents.agent_3_optimization.candle_loader import CandleLoader
-from database.db import Database
+from agents.agent_5_infrastructure.database_manager import DatabaseManager
 
 # Load NVDA data from database
 print("Loading NVDA data from database...")
-db = Database()
+db = DatabaseManager()
 candle_loader = CandleLoader(db)
 candle_df = candle_loader.load_candles('NVDA', candle_type='regular', aggregation_days=1)
 print(f"Loaded {len(candle_df)} bars")
-db.close()
 
 # Test Config 1: ATR 14, Multiplier 3.0, No exits
 print("\n" + "="*80)
