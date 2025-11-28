@@ -4,24 +4,14 @@ Combines ATR (Average True Range) with price to create trend-following signals
 """
 
 import backtrader as bt
-import math
 
 
 class Supertrend(bt.Indicator):
     """
-    Supertrend Indicator
+    Supertrend Trend-Following Indicator
 
-    Trend-following indicator that uses ATR to create dynamic support/resistance bands.
-
-    Buy Signal: Price crosses above Supertrend line (uptrend begins)
-    Sell Signal: Price crosses below Supertrend line (downtrend begins)
-
-    Formula:
-        Basic Band = (High + Low) / 2
-        Upper Band = Basic Band + (Multiplier × ATR)
-        Lower Band = Basic Band - (Multiplier × ATR)
-
-        Supertrend = Lower Band (in uptrend) or Upper Band (in downtrend)
+    Uses ATR to create dynamic support/resistance bands.
+    Direction: 1 = uptrend, -1 = downtrend
 
     Parameters:
         period: ATR calculation period (default: 10)
@@ -31,90 +21,61 @@ class Supertrend(bt.Indicator):
     lines = ('supertrend', 'direction', 'final_upper', 'final_lower')
 
     params = (
-        ('period', 10),        # ATR period
-        ('multiplier', 3.0),   # ATR multiplier
-    )
-
-    plotinfo = dict(
-        subplot=False,
-        plotlinelabels=True
-    )
-
-    plotlines = dict(
-        supertrend=dict(
-            _name='Supertrend',
-            color='green',
-            width=2.0
-        )
+        ('period', 10),
+        ('multiplier', 3.0),
     )
 
     def __init__(self):
         # Calculate ATR
-        self.atr = bt.indicators.AverageTrueRange(
-            self.data,
-            period=self.params.period
-        )
+        self.atr = bt.indicators.AverageTrueRange(self.data, period=self.params.period)
 
-        # Basic band (HL/2)
-        self.basic_band = (self.data.high + self.data.low) / 2
-
-        # Initialize for calculation
+        # Wait for ATR to be ready
         self.addminperiod(self.params.period)
 
     def next(self):
-        """Calculate Supertrend value for current bar using standard algorithm."""
+        """Calculate Supertrend using proven algorithm."""
 
-        # DEBUG: Confirm next() is being called
-        if len(self) <= 3:
-            print(f">>> next() called: Bar {len(self)}")
-
-        # Step 1: Calculate basic bands
-        hl_avg = (self.data.high[0] + self.data.low[0]) / 2.0
+        # Get current values
+        high = self.data.high[0]
+        low = self.data.low[0]
+        close = self.data.close[0]
         atr = self.atr[0]
 
-        # DEBUG: Show ATR value
-        if len(self) <= 3:
-            print(f">>> Bar {len(self)}: ATR value = {atr}")
-
-        # Skip if ATR is not ready (NaN, None, or <= 0)
-        if atr is None or math.isnan(atr) or atr <= 0:
-            # Debug: Show why we're skipping
-            if len(self) <= 35:
-                print(f"Bar {len(self)}: Skipping - ATR={atr}")
-            return
-
+        # Calculate basic bands
+        hl_avg = (high + low) / 2.0
         basic_upper = hl_avg + (self.params.multiplier * atr)
         basic_lower = hl_avg - (self.params.multiplier * atr)
 
-        # Debug: Print first valid calculations
-        if len(self) <= 2:
-            print(f"Bar {len(self)}: ATR={atr:.4f}, hl_avg={hl_avg:.2f}, "
-                  f"basic_upper={basic_upper:.2f}, basic_lower={basic_lower:.2f}")
-
-        # Step 2: Calculate final bands
+        # Calculate final bands (with smoothing)
         if len(self) == 1:
             # First bar - initialize
             final_upper = basic_upper
             final_lower = basic_lower
-            print(f"Bar {len(self)}: Initializing final bands: upper={final_upper:.2f}, lower={final_lower:.2f}")
         else:
+            # Smooth the bands
+            prev_final_upper = self.final_upper[-1]
+            prev_final_lower = self.final_lower[-1]
+            prev_close = self.data.close[-1]
+
             # Update final upper band
-            final_upper = basic_upper if (basic_upper < self.final_upper[-1] or
-                                          self.data.close[-1] > self.final_upper[-1]) else self.final_upper[-1]
+            if basic_upper < prev_final_upper or prev_close > prev_final_upper:
+                final_upper = basic_upper
+            else:
+                final_upper = prev_final_upper
 
             # Update final lower band
-            final_lower = basic_lower if (basic_lower > self.final_lower[-1] or
-                                          self.data.close[-1] < self.final_lower[-1]) else self.final_lower[-1]
+            if basic_lower > prev_final_lower or prev_close < prev_final_lower:
+                final_lower = basic_lower
+            else:
+                final_lower = prev_final_lower
 
         # Store final bands
         self.final_upper[0] = final_upper
         self.final_lower[0] = final_lower
 
-        # Step 3: Determine Supertrend value and direction
-        close = self.data.close[0]
-
+        # Determine direction
         if len(self) == 1:
-            # First bar - start in uptrend if close is above lower band
+            # First bar - start in uptrend if close above lower band
             if close > final_lower:
                 self.direction[0] = 1
                 self.supertrend[0] = final_lower
@@ -126,7 +87,7 @@ class Supertrend(bt.Indicator):
             prev_direction = self.direction[-1]
 
             if prev_direction == -1:
-                # Was in downtrend - switch to uptrend if close crosses above final_upper
+                # Was in downtrend - switch to uptrend if close crosses above upper band
                 if close > final_upper:
                     self.direction[0] = 1
                     self.supertrend[0] = final_lower
@@ -134,16 +95,10 @@ class Supertrend(bt.Indicator):
                     self.direction[0] = -1
                     self.supertrend[0] = final_upper
             else:
-                # Was in uptrend - switch to downtrend if close crosses below final_lower
+                # Was in uptrend - switch to downtrend if close crosses below lower band
                 if close < final_lower:
                     self.direction[0] = -1
                     self.supertrend[0] = final_upper
                 else:
                     self.direction[0] = 1
                     self.supertrend[0] = final_lower
-
-        # Debug: Print direction changes to verify they match manual calculation
-        if len(self) > 1:
-            if self.direction[0] != prev_direction:
-                print(f"Bar {len(self)}: DIRECTION CHANGE {prev_direction:.0f} -> {self.direction[0]:.0f}, "
-                      f"close=${close:.2f}, final_lower=${final_lower:.2f}, final_upper=${final_upper:.2f}")
