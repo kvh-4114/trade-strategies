@@ -64,9 +64,17 @@ class Supertrend(bt.Indicator):
     def next(self):
         """Calculate Supertrend value for current bar using standard algorithm."""
 
+        # DEBUG: Confirm next() is being called
+        if len(self) <= 3:
+            print(f">>> next() called: Bar {len(self)}")
+
         # Step 1: Calculate basic bands
         hl_avg = (self.data.high[0] + self.data.low[0]) / 2.0
         atr = self.atr[0]
+
+        # DEBUG: Show ATR value
+        if len(self) <= 3:
+            print(f">>> Bar {len(self)}: ATR value = {atr}")
 
         # Skip if ATR is not ready (NaN, None, or <= 0)
         if atr is None or math.isnan(atr) or atr <= 0:
