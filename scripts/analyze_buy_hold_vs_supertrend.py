@@ -31,11 +31,10 @@ class BuyAndHold(bt.Strategy):
 
     def next(self):
         if not self.position:
-            # Buy on first bar - account for commission to avoid rejection
+            # Buy on first bar - use all cash (no commission)
             cash = self.broker.get_cash()
             close = self.data.close[0]
-            # Commission is 0.1% so total cost is close * 1.001
-            size = int(cash / (close * 1.001))
+            size = int(cash / close)
             if size > 0:
                 self.order = self.buy(size=size)
 
@@ -52,7 +51,7 @@ def run_buy_hold(df):
     cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
 
     cerebro.broker.setcash(100000.0)
-    cerebro.broker.setcommission(commission=0.001)
+    cerebro.broker.setcommission(commission=0.0)  # Zero commission
 
     start_value = cerebro.broker.getvalue()
     results = cerebro.run()
@@ -97,7 +96,7 @@ def run_supertrend(df, params):
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.02)
 
     cerebro.broker.setcash(100000.0)
-    cerebro.broker.setcommission(commission=0.001)
+    cerebro.broker.setcommission(commission=0.0)  # Zero commission
 
     start_value = cerebro.broker.getvalue()
     results = cerebro.run()
