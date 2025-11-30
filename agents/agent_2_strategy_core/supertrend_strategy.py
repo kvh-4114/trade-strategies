@@ -170,6 +170,7 @@ class SupertrendStrategy(bt.Strategy):
             Number of shares to buy
         """
         price = self.data.close[0]
+        cash = self.broker.get_cash()
 
         if self.params.position_sizing == 'fixed':
             # Fixed dollar amount
@@ -177,7 +178,15 @@ class SupertrendStrategy(bt.Strategy):
                 return int(self.params.position_size / price)
             return 0
 
-        # Add other sizing methods here if needed
+        elif self.params.position_sizing == 'portfolio_pct':
+            # Percentage of available cash
+            # Use 95% to leave buffer for rounding and ensure order fills
+            position_value = cash * 0.95
+            if price > 0:
+                return int(position_value / price)
+            return 0
+
+        # Default to 0 if unknown method
         return 0
 
     def notify_order(self, order):
