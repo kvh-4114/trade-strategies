@@ -4,87 +4,97 @@
 
 Compared buy-and-hold against optimized Supertrend parameters across 4 high-growth tech stocks (NVDA, AMD, TSLA, AAPL).
 
-**Key Finding:** Supertrend provides MASSIVE drawdown protection (82.5% average reduction) but captures only 80% of returns on average, with wide variance by stock.
+**CRITICAL BUG FIXED:** Original analysis had buy-hold buying 8 years late due to commission calculation error.
+
+**Key Finding:** Supertrend provides massive drawdown protection (86% reduction) but captures **ONLY 1.2%** of buy-hold returns on these ultra-strong bull runs. This is a catastrophic trade-off.
 
 ---
 
-## Results Table
+## Results Table (CORRECTED)
 
-| Symbol | B&H Return | B&H MaxDD | B&H Sharpe | ST Return | ST MaxDD | ST Sharpe | Trades | Return Capture | DD Reduction |
-|--------|------------|-----------|------------|-----------|----------|-----------|--------|----------------|--------------|
-| **NVDA** | **57.6%** | 36.7% | 0.29 | **114.5%** | 9.9% | **0.67** | 13 | **198.7%** | 73.0% |
-| **AMD** | **73.2%** | 64.6% | 0.26 | **60.1%** | 16.8% | 0.25 | 15 | **82.1%** | 74.0% |
-| **TSLA** | **256.9%** | 73.6% | 0.46 | **54.6%** | 7.1% | 0.26 | 40 | **21.3%** | 90.4% |
-| **AAPL** | **138.7%** | 33.3% | 0.44 | **25.7%** | 2.5% | 0.16 | 66 | **18.5%** | 92.6% |
-| **AVG** | **131.6%** | 52.1% | 0.36 | **63.7%** | 9.1% | 0.33 | 33.5 | **80.2%** | 82.5% |
+| Symbol | B&H Return | B&H Final | B&H MaxDD | B&H Sharpe | ST Return | ST MaxDD | ST Sharpe | Trades | Return Capture | DD Reduction |
+|--------|------------|-----------|-----------|------------|-----------|----------|-----------|--------|----------------|--------------|
+| **NVDA** | **28,267%** | $28.4M | 66.3% | 0.98 | **114.5%** | 9.9% | 0.67 | 13 | **0.4%** | 85.1% |
+| **AMD** | **10,450%** | $10.5M | 65.4% | 0.67 | **60.1%** | 16.8% | 0.25 | 15 | **0.6%** | 74.4% |
+| **TSLA** | **3,862%** | $4.0M | 73.6% | 0.46 | **54.6%** | 7.1% | 0.26 | 40 | **1.4%** | 90.4% |
+| **AAPL** | **1,043%** | $1.1M | 38.6% | 0.90 | **25.7%** | 2.5% | 0.16 | 66 | **2.5%** | 93.6% |
+| **AVG** | **10,905%** | $11.0M | 61.0% | 0.75 | **63.7%** | 9.1% | 0.33 | 33.5 | **1.2%** | 85.9% |
+
+**NOTE:** All backtests start with $100,000. B&H Final shows ending portfolio value.
 
 ---
 
 ## Key Insights
 
-### 1. NVDA is a MASSIVE OUTLIER (In a Good Way!)
+### 1. The Brutal Truth: We're Leaving EVERYTHING on the Table
 
-**Supertrend BEAT buy-and-hold:**
-- Return: 114.5% vs 57.6% (198.7% capture)
-- Sharpe: 0.67 vs 0.29 (2.3x better risk-adjusted returns!)
-- Max DD: 9.9% vs 36.7% (73% reduction)
+**NVDA - The Worst Performer:**
+- B&H: $100k → $28.4 million (28,267% return)
+- Supertrend: $100k → $214k (114.5% return)
+- **Captured: 0.4%** - Left **$28.2 MILLION** on the table
+- Only 13 trades over 9 years - too cautious
 
-**Why this happened:**
-- Ultra-wide bands (ATR Mult 6.0, Period 30) perfectly caught the massive bull run
-- Avoided major drawdowns that hurt buy-and-hold
-- Very selective (only 13 trades) - stayed in winning positions
-- No profit target - let winners run completely
+**Why Supertrend Failed on NVDA:**
+- Ultra-wide bands (Mult 6.0) helped, but still exited too early
+- NVDA had a relentless bull run with few major corrections
+- Each exit/re-entry cost massive opportunity
+- 10% stop loss triggered on normal volatility, missing continuation
 
-**Lesson:** When trend strength is extreme and bands are wide enough, Supertrend can BEAT buy-and-hold by avoiding corrections.
-
----
-
-### 2. The "Leaving Money on Table" Problem
-
-**TSLA - Major Underperformance:**
-- B&H: 256.9%, ST: 54.6% (only 21% captured)
-- Left 202% on the table
-- Issue: 200% profit target cuts winners short
-- 40 trades (too many exits/re-entries)
-
-**AAPL - Severe Underperformance:**
-- B&H: 138.7%, ST: 25.7% (only 19% captured)
-- Left 113% on the table
-- Issue: 50% profit target, tight bands (Mult 2.0), 15% stop loss
-- 66 trades (excessive churning)
-
-**AMD - Acceptable Capture:**
-- 82% capture with 74% DD reduction
-- Wide bands (Mult 6.0), no profit target
-- Good balance
+**The Real Lesson:** On ultra-strong secular trends (AI boom, EV boom), trend-following with stops is catastrophic. Buy-and-hold crushes it.
 
 ---
 
-### 3. Drawdown Protection is EXCEPTIONAL
+### 2. ALL Stocks Show Catastrophic Underperformance
 
-**Average Reduction: 82.5%**
-- B&H: 52.1% max DD (painful, panic-inducing)
-- ST: 9.1% max DD (manageable, sleep well)
+**AMD - Second Worst:**
+- B&H: $100k → $10.5 million (10,450% return)
+- ST: $100k → $160k (60.1% return)
+- **Captured: 0.6%** - Left **$10.4 million** on the table
+
+**TSLA - Still Terrible:**
+- B&H: $100k → $4.0 million (3,862% return)
+- ST: $100k → $155k (54.6% return)
+- **Captured: 1.4%** - Left **$3.8 million** on the table
+- 200% profit target absolutely killed returns
+
+**AAPL - "Best" Capture (Still Awful):**
+- B&H: $100k → $1.1 million (1,043% return)
+- ST: $100k → $126k (25.7% return)
+- **Captured: 2.5%** - Left **$1.0 million** on the table
+- 66 trades (excessive churning from tight bands)
+
+---
+
+### 3. Drawdown Protection is EXCEPTIONAL (But Is It Worth the Cost?)
+
+**Average Reduction: 85.9%**
+- B&H: 61.0% max DD (brutal but survivable on these stocks)
+- ST: 9.1% max DD (comfortable, sleep well)
 
 **Best DD Reduction:**
-- AAPL: 92.6% reduction (33.3% → 2.5%)
+- AAPL: 93.6% reduction (38.6% → 2.5%)
 - TSLA: 90.4% reduction (73.6% → 7.1%)
 
-**This is the CORE VALUE of Supertrend** - not beating buy-and-hold, but surviving the journey.
+**The Question:** Is 86% DD reduction worth sacrificing 99% of returns?
+- You paid **$10.9 million** to avoid a **61% drawdown**
+- That's **$178k per 1% of DD avoided**
+- On a $100k account, you gave up $10.8M to save $61k in temporary paper losses
 
 ---
 
-### 4. Risk-Adjusted Returns (Sharpe Ratio)
+### 4. Risk-Adjusted Returns: Buy-and-Hold WINS
 
-**Nearly Identical on Average:**
-- B&H: 0.36
-- ST: 0.33 (only 0.03 worse)
+**Sharpe Ratio Comparison:**
+- B&H: **0.75** (excellent)
+- ST: **0.33** (poor)
 
-**But NVDA shows what's possible:**
-- NVDA ST Sharpe: 0.67 (exceptional)
-- NVDA B&H Sharpe: 0.29 (mediocre)
+**Buy-and-hold has 2.3x BETTER risk-adjusted returns!**
 
-**Why Sharpe matters:** It measures return per unit of risk. Similar Sharpe with 82% less drawdown means ST is more efficient capital usage.
+Even with 61% drawdowns, the massive returns more than compensate for the volatility. This completely changes the narrative - buy-and-hold isn't just better on absolute returns, it's better on risk-adjusted returns too.
+
+**NVDA Sharpe:**
+- B&H: 0.98 (exceptional - near-perfect risk/reward)
+- ST: 0.67 (good, but much worse)
 
 ---
 
