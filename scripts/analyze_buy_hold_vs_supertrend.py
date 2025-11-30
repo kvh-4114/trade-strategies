@@ -31,10 +31,13 @@ class BuyAndHold(bt.Strategy):
 
     def next(self):
         if not self.position:
-            # Buy on first bar
+            # Buy on first bar - account for commission to avoid rejection
             cash = self.broker.get_cash()
-            size = int(cash / self.data.close[0])
-            self.order = self.buy(size=size)
+            close = self.data.close[0]
+            # Commission is 0.1% so total cost is close * 1.001
+            size = int(cash / (close * 1.001))
+            if size > 0:
+                self.order = self.buy(size=size)
 
 def run_buy_hold(df):
     """Run buy-and-hold backtest"""
