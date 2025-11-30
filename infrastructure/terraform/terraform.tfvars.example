@@ -1,0 +1,44 @@
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "dev"
+
+# Database Configuration
+db_name             = "mean_reversion"
+db_username         = "trader"
+postgres_version    = "15.4"
+db_instance_class   = "db.t3.medium"  # Change to db.t3.large or db.r6g.xlarge for production
+
+# Storage Configuration
+db_allocated_storage     = 100
+db_max_allocated_storage = 500
+db_iops                  = 3000
+db_storage_throughput    = 125
+
+# Network Configuration
+# IMPORTANT: Replace with your actual IP address or VPC CIDR
+publicly_accessible = true
+allowed_cidr_blocks = ["0.0.0.0/0"]  # CHANGE THIS to your IP: ["123.45.67.89/32"]
+
+# High Availability (set to true for production)
+multi_az = false
+
+# Backup Configuration
+backup_retention_period = 7
+backup_window           = "03:00-04:00"
+maintenance_window      = "sun:04:00-sun:05:00"
+skip_final_snapshot     = true  # Set to false for production
+
+# Monitoring
+enhanced_monitoring_interval    = 60
+enable_performance_insights     = true
+performance_insights_retention  = 7
+
+# CloudWatch Alarms (optional - add SNS topic ARN)
+# alarm_actions = ["arn:aws:sns:us-east-1:123456789012:rds-alerts"]
+
+# Database Connections
+max_db_connections = "100"
+
+# Maintenance
+auto_minor_version_upgrade = true
+deletion_protection        = false  # Set to true for production
