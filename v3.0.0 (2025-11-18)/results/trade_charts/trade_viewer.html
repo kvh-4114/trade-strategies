@@ -1,0 +1,1063 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last 25 Trades - Conservative Allocation Strategy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .sort-controls select {
+            padding: 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            background: white;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .trade-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid #e0e0e0;
+        }
+
+        .trade-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .trade-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+        }
+
+        .trade-header h3 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .trade-dates {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .trade-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .metric-value.positive {
+            color: #27ae60;
+        }
+
+        .metric-value.negative {
+            color: #e74c3c;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+
+        .modal-content {
+            margin: 2% auto;
+            display: block;
+            max-width: 95%;
+            max-height: 95%;
+        }
+
+        .close {
+            position: absolute;
+            top: 30px;
+            right: 50px;
+            color: #f1f1f1;
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #bbb;
+        }
+
+        .position-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .pos-2x { background: #27ae60; color: white; }
+        .pos-15x { background: #3498db; color: white; }
+        .pos-12x { background: #f39c12; color: white; }
+        .pos-1x { background: #95a5a6; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Last 25 Trades - Conservative Allocation</h1>
+        <div class="subtitle">4-Day Bar Strategy with Slope-Based Position Sizing</div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value">25</div>
+                <div class="stat-label">Total Trades</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="total-pnl">$0</div>
+                <div class="stat-label">Total P&L</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="avg-pnl">$0</div>
+                <div class="stat-label">Avg P&L</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="win-rate">0%</div>
+                <div class="stat-label">Win Rate</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="avg-slope">0%</div>
+                <div class="stat-label">Avg Slope</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="sort-controls">
+                <label for="sort-by">Sort by: </label>
+                <select id="sort-by" onchange="sortTrades()">
+                    <option value="trade-num">Trade Number</option>
+                    <option value="pnl-desc">P&L (Highest First)</option>
+                    <option value="pnl-asc">P&L (Lowest First)</option>
+                    <option value="slope-desc">Slope (Highest First)</option>
+                    <option value="slope-asc">Slope (Lowest First)</option>
+                    <option value="size-desc">Position Size (Largest First)</option>
+                </select>
+            </div>
+            <div style="color: #7f8c8d;">
+                Click on any chart to view full size
+            </div>
+        </div>
+
+        <div class="grid-container" id="trades-grid">
+
+            <div class="trade-card"
+                 data-pnl="1075.0"
+                 data-slope="1.9579508103819527"
+                 data-size="1.0"
+                 data-trade-num="1">
+                <div class="trade-header">
+                    <h3>
+                        AAON
+                        <span class="position-badge pos-1x">1.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-07-31 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$1,075</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.96%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_01_AAON_2025-11-12.png" alt="AAON Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="734.4400000000004"
+                 data-slope="1.5857988900338875"
+                 data-size="1.0"
+                 data-trade-num="2">
+                <div class="trade-header">
+                    <h3>
+                        AAON
+                        <span class="position-badge pos-1x">1.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-04 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$734</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.59%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_02_AAON_2025-11-12.png" alt="AAON Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="1332.0000000000018"
+                 data-slope="2.588205738097856"
+                 data-size="1.2"
+                 data-trade-num="3">
+                <div class="trade-header">
+                    <h3>
+                        AAPL
+                        <span class="position-badge pos-12x">1.2x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-12 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$1,332</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.59%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_03_AAPL_2025-11-12.png" alt="AAPL Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="854.9100000000008"
+                 data-slope="3.081624337905737"
+                 data-size="1.5"
+                 data-trade-num="4">
+                <div class="trade-header">
+                    <h3>
+                        AAPL
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-16 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$855</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3.08%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_04_AAPL_2025-11-12.png" alt="AAPL Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-1440.7599999999995"
+                 data-slope="1.6102072654334547"
+                 data-size="1.0"
+                 data-trade-num="5">
+                <div class="trade-header">
+                    <h3>
+                        ADMA
+                        <span class="position-badge pos-1x">1.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-04 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-1,441</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.61%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_05_ADMA_2025-11-12.png" alt="ADMA Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="759.0"
+                 data-slope="2.086635216471835"
+                 data-size="1.2"
+                 data-trade-num="6">
+                <div class="trade-header">
+                    <h3>
+                        AGYS
+                        <span class="position-badge pos-12x">1.2x</span>
+                    </h3>
+                    <div class="trade-dates">2025-10-15 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$759</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.09%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_06_AGYS_2025-11-12.png" alt="AGYS Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="36.71999999999935"
+                 data-slope="1.5327567239482565"
+                 data-size="1.0"
+                 data-trade-num="7">
+                <div class="trade-header">
+                    <h3>
+                        ALGN
+                        <span class="position-badge pos-1x">1.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-10-23 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$37</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.53%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_07_ALGN_2025-11-12.png" alt="ALGN Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="944.6600000000004"
+                 data-slope="2.174814748382885"
+                 data-size="1.2"
+                 data-trade-num="8">
+                <div class="trade-header">
+                    <h3>
+                        ALNT
+                        <span class="position-badge pos-12x">1.2x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-24 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$945</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.17%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_08_ALNT_2025-11-12.png" alt="ALNT Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-9.600000000000136"
+                 data-slope="3.93865701062734"
+                 data-size="1.5"
+                 data-trade-num="9">
+                <div class="trade-header">
+                    <h3>
+                        ALNT
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-10-15 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-10</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3.94%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_09_ALNT_2025-11-12.png" alt="ALNT Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="2070.4"
+                 data-slope="3.603920703006142"
+                 data-size="1.5"
+                 data-trade-num="10">
+                <div class="trade-header">
+                    <h3>
+                        AMAT
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-09-17 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$2,070</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3.60%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_10_AMAT_2025-11-12.png" alt="AMAT Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="853.3199999999998"
+                 data-slope="5.104537746264069"
+                 data-size="2.0"
+                 data-trade-num="11">
+                <div class="trade-header">
+                    <h3>
+                        AMAT
+                        <span class="position-badge pos-2x">2.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-09-21 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$853</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">5.10%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_11_AMAT_2025-11-12.png" alt="AMAT Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-351.0"
+                 data-slope="2.5472853684204457"
+                 data-size="1.2"
+                 data-trade-num="12">
+                <div class="trade-header">
+                    <h3>
+                        AMBA
+                        <span class="position-badge pos-12x">1.2x</span>
+                    </h3>
+                    <div class="trade-dates">2025-11-08 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-351</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.55%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_12_AMBA_2025-11-12.png" alt="AMBA Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-362.5199999999994"
+                 data-slope="2.023421370308109"
+                 data-size="1.2"
+                 data-trade-num="13">
+                <div class="trade-header">
+                    <h3>
+                        AMBA
+                        <span class="position-badge pos-12x">1.2x</span>
+                    </h3>
+                    <div class="trade-dates">2025-11-12 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-363</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.02%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_13_AMBA_2025-11-12.png" alt="AMBA Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="3121.33"
+                 data-slope="4.382405453660108"
+                 data-size="1.5"
+                 data-trade-num="14">
+                <div class="trade-header">
+                    <h3>
+                        AMD
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-10-03 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$3,121</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">4.38%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_14_AMD_2025-11-12.png" alt="AMD Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="767.0400000000002"
+                 data-slope="8.487752660763789"
+                 data-size="2.0"
+                 data-trade-num="15">
+                <div class="trade-header">
+                    <h3>
+                        AMD
+                        <span class="position-badge pos-2x">2.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-10-07 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$767</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">8.49%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_15_AMD_2025-11-12.png" alt="AMD Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="4152.329999999999"
+                 data-slope="3.2560661515521097"
+                 data-size="1.5"
+                 data-trade-num="16">
+                <div class="trade-header">
+                    <h3>
+                        AMKR
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-05-16 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$4,152</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3.26%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_16_AMKR_2025-11-12.png" alt="AMKR Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="3242.68"
+                 data-slope="1.913510911424897"
+                 data-size="1.0"
+                 data-trade-num="17">
+                <div class="trade-header">
+                    <h3>
+                        AMKR
+                        <span class="position-badge pos-1x">1.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-05-20 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$3,243</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.91%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_17_AMKR_2025-11-12.png" alt="AMKR Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-477.7099999999999"
+                 data-slope="3.668074335516992"
+                 data-size="1.5"
+                 data-trade-num="18">
+                <div class="trade-header">
+                    <h3>
+                        AMZN
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-10-31 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-478</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3.67%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_18_AMZN_2025-11-12.png" alt="AMZN Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-298.11000000000047"
+                 data-slope="3.895921298075157"
+                 data-size="1.5"
+                 data-trade-num="19">
+                <div class="trade-header">
+                    <h3>
+                        AMZN
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-11-04 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-298</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3.90%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_19_AMZN_2025-11-12.png" alt="AMZN Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="-2952.6000000000004"
+                 data-slope="2.3832556503385884"
+                 data-size="1.2"
+                 data-trade-num="20">
+                <div class="trade-header">
+                    <h3>
+                        ANGI
+                        <span class="position-badge pos-12x">1.2x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-08 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value negative">$-2,953</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.38%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_20_ANGI_2025-11-12.png" alt="ANGI Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="6048.379999999999"
+                 data-slope="5.239925656838713"
+                 data-size="2.0"
+                 data-trade-num="21">
+                <div class="trade-header">
+                    <h3>
+                        APLD
+                        <span class="position-badge pos-2x">2.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-04 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$6,048</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">5.24%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_21_APLD_2025-11-12.png" alt="APLD Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="3320.46"
+                 data-slope="7.676298242069096"
+                 data-size="2.0"
+                 data-trade-num="22">
+                <div class="trade-header">
+                    <h3>
+                        APLD
+                        <span class="position-badge pos-2x">2.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-08 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$3,320</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">7.68%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_22_APLD_2025-11-12.png" alt="APLD Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="23.640000000000548"
+                 data-slope="4.2168121267799625"
+                 data-size="1.5"
+                 data-trade-num="23">
+                <div class="trade-header">
+                    <h3>
+                        ARDX
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-11-04 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$24</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">4.22%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_23_ARDX_2025-11-12.png" alt="ARDX Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="143.04000000000013"
+                 data-slope="4.007326661901344"
+                 data-size="1.5"
+                 data-trade-num="24">
+                <div class="trade-header">
+                    <h3>
+                        ARDX
+                        <span class="position-badge pos-15x">1.5x</span>
+                    </h3>
+                    <div class="trade-dates">2025-11-08 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$143</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">4.01%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.5x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_24_ARDX_2025-11-12.png" alt="ARDX Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+            <div class="trade-card"
+                 data-pnl="7079.159999999999"
+                 data-slope="6.473975192643727"
+                 data-size="2.0"
+                 data-trade-num="25">
+                <div class="trade-header">
+                    <h3>
+                        ARWR
+                        <span class="position-badge pos-2x">2.0x</span>
+                    </h3>
+                    <div class="trade-dates">2025-08-16 → 2025-11-12</div>
+                </div>
+                <div class="trade-metrics">
+                    <div class="metric">
+                        <div class="metric-value positive">+$7,079</div>
+                        <div class="metric-label">P&L</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">6.47%</div>
+                        <div class="metric-label">Slope</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2.0x</div>
+                        <div class="metric-label">Position</div>
+                    </div>
+                </div>
+                <img src="trade_25_ARWR_2025-11-12.png" alt="ARWR Trade Chart" class="chart-image" onclick="openModal(this.src)">
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal for full-size image -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        // Calculate and display summary statistics
+        function updateStats() {
+            const cards = document.querySelectorAll('.trade-card');
+            let totalPnl = 0;
+            let winners = 0;
+            let totalSlope = 0;
+
+            cards.forEach(card => {
+                const pnl = parseFloat(card.dataset.pnl);
+                const slope = parseFloat(card.dataset.slope);
+                totalPnl += pnl;
+                if (pnl > 0) winners++;
+                totalSlope += slope;
+            });
+
+            document.getElementById('total-pnl').textContent =
+                '$' + totalPnl.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            document.getElementById('avg-pnl').textContent =
+                '$' + (totalPnl / cards.length).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            document.getElementById('win-rate').textContent =
+                ((winners / cards.length) * 100).toFixed(1) + '%';
+            document.getElementById('avg-slope').textContent =
+                (totalSlope / cards.length).toFixed(2) + '%';
+        }
+
+        // Sort trades
+        function sortTrades() {
+            const grid = document.getElementById('trades-grid');
+            const cards = Array.from(grid.children);
+            const sortBy = document.getElementById('sort-by').value;
+
+            cards.sort((a, b) => {
+                switch(sortBy) {
+                    case 'pnl-desc':
+                        return parseFloat(b.dataset.pnl) - parseFloat(a.dataset.pnl);
+                    case 'pnl-asc':
+                        return parseFloat(a.dataset.pnl) - parseFloat(b.dataset.pnl);
+                    case 'slope-desc':
+                        return parseFloat(b.dataset.slope) - parseFloat(a.dataset.slope);
+                    case 'slope-asc':
+                        return parseFloat(a.dataset.slope) - parseFloat(b.dataset.slope);
+                    case 'size-desc':
+                        return parseFloat(b.dataset.size) - parseFloat(a.dataset.size);
+                    case 'trade-num':
+                    default:
+                        return parseInt(a.dataset.tradeNum) - parseInt(b.dataset.tradeNum);
+                }
+            });
+
+            cards.forEach(card => grid.appendChild(card));
+        }
+
+        // Modal functions
+        function openModal(src) {
+            document.getElementById('imageModal').style.display = 'block';
+            document.getElementById('modalImage').src = src;
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Initialize
+        updateStats();
+    </script>
+</body>
+</html>

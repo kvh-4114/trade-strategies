@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir C:Userskvanh.claude-code-settings.json 2)",
+      "Bash(nul)",
+      "Bash(dir C:UserskvanhAppDataRoamingclaude-codesettings.json 2)",
+      "Bash(python:*)",
+      "Bash(mkdir:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

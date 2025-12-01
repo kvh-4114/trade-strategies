@@ -1,0 +1,13 @@
+Production Baseline Version: 3.0.0
+Release Date: November 18, 2025
+Status: Production Ready
+
+Major Changes in v3.0:
+- CRITICAL FIX: Bar synchronization using origin='epoch'
+- All symbols now share identical 4-day bar boundaries
+- Eliminated systematic error causing symbol misalignment
+- More accurate portfolio-level metrics
+
+Previous Version: v2.x (DEPRECATED - Do not use)
+
+For full documentation, see: PRODUCTION_BASELINE_V3.0.md
