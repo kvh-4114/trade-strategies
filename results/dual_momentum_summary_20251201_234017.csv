@@ -1,0 +1,2 @@
+strategy,lookback_months,top_percentile,exit_percentile,position_size,initial_capital,final_value,total_return,annualized_return,max_drawdown,sharpe_ratio,total_trades,win_rate,profit_factor
+Dual Momentum,12,0.2,0.3,10000,1000000,3933323.329999998,293.33233299999984,17.292885762489906,-52.10425103568016,0.5094381016876427,939,45.260915867944625,4.051485547118228
