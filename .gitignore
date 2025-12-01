@@ -94,3 +94,8 @@ Thumbs.db
 # Extracted stock data
 mean_reversion/11_22_25_daily/
 data/raw/11_22_25_daily/
+
+# Database dumps
+*.dump
+*.dump.gz
+*.sql.gz
