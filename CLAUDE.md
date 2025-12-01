@@ -29,6 +29,19 @@ pytest tests/integration/
 pytest --cov=. --cov-report=html
 ```
 
+## Current Data State
+
+The database contains pre-loaded trading data:
+
+| Table | Records | Description |
+|-------|---------|-------------|
+| stock_data | 658,483 | Daily OHLCV for 268 symbols (2016-02-08 to 2025-11-21) |
+| candles | 9,850,445 | Pre-generated candles (all 13 types per symbol) |
+| backtest_results | 27,698 | Historical backtest runs |
+| strategy_configs | 3,549 | Tested strategy configurations |
+
+**Symbols include:** AAPL, AMD, AMZN, NVDA, TSLA, and 263 other NASDAQ stocks.
+
 ## Architecture
 
 ### Multi-Agent System
