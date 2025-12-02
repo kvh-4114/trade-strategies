@@ -1,110 +1,139 @@
 # =============================================================================
-# Phase 2: Mean & StdDev Optimization
+# Phase 2: Parameter Optimization for Regular 1-Day Candles
 # =============================================================================
-# Objective: Optimize statistical parameters for top 5 candle types from Phase 1
-# Expected: ~400 configurations tested (5 candles × 4 means × 5 lookbacks × 4 thresholds)
+# Objective: Optimize mean reversion parameters for the ONLY profitable config
+# From Phase 1: Regular 1d is the clear winner (+3.98% avg, 190/268 profitable)
+# Testing: 190 profitable stocks × 180 parameter combos = 34,200 backtests
 # =============================================================================
 
 phase: 2
-name: "Mean & StdDev Optimization"
-description: "Grid search over mean types, lookbacks, and entry thresholds"
+name: "Regular 1d Parameter Optimization"
+description: "Grid search to optimize mean reversion parameters for regular 1-day candles"
 
-# Use top configs from Phase 1
-inherit_from_phase: 1
-top_configs: 5                   # Use top 5 candle types from Phase 1
+# Use ONLY regular 1-day candles (Phase 1 winner)
+candle_configs:
+  - candle_type: "regular"
+    aggregation_days: 1
 
 # Parameter grid for optimization
 parameter_grid:
-  # Mean calculation methods
-  mean_type: ["SMA", "EMA", "LinReg", "VWAP"]
+  # Mean lookback periods (days)
+  mean_lookback: [10, 15, 20, 25, 30]
+  stddev_lookback: [10, 15, 20, 25, 30]  # Test same range for consistency
 
-  # Lookback periods
-  mean_lookback: [10, 20, 30, 50, 100]
-  stddev_lookback: [10, 20, 30, 50, 100]
-
-  # Entry thresholds (standard deviations)
+  # Entry thresholds (standard deviations below mean)
   entry_threshold: [1.5, 2.0, 2.5, 3.0]
 
-  # Exit methods
-  exit_type: ["mean"]            # Keep simple for now
+  # Exit strategies
+  exit_type:
+    - "mean"              # Exit when price returns to mean (baseline)
+    - "opposite_band"     # Exit at upper band (mean + N*stddev)
+    - "profit_target"     # Exit at fixed profit percentage
 
-# Fixed parameters (not optimized in Phase 2)
+  # Exit thresholds (for profit_target exit type)
+  exit_threshold: [0.05, 0.10]  # 5% or 10% profit target
+
+  # Stop loss configuration
+  stop_loss_type:
+    - "none"              # No stop loss (baseline)
+    - "fixed_pct"         # Fixed percentage stop loss
+
+  stop_loss_value:
+    - null                # No stop loss
+    - -0.05               # -5% stop loss
+    - -0.10               # -10% stop loss
+
+# Fixed parameters (same as Phase 1 baseline)
 fixed_parameters:
+  mean_type: "SMA"                # Keep simple moving average
   position_sizing: "fixed"
-  position_size: 10000
+  position_size: 10000            # $10k per position
 
+  # Filters disabled (Phase 1 baseline)
   use_volume_filter: false
   use_rsi_filter: false
   use_trend_filter: false
   use_volatility_filter: false
 
-  stop_loss_type: "none"
-
-# Stock universe (same as Phase 1)
+# Stock selection
 stocks:
-  count: 250
+  # Use only the 190 profitable stocks from Phase 1
+  source: "phase_1_profitable"    # Query from database
+  min_return_threshold: 0.0       # Only stocks with positive returns in Phase 1
+  candle_type_filter: "regular"   # From regular 1d results
+  aggregation_filter: 1           # 1-day candles
+
+  # Fallback if database query not available
+  count: 190
   data_path: "data/raw/"
-  symbols: []
+
+# Backtest period - use full data range like Phase 1
+backtest_period:
+  start_date: null                # Use first available date for each stock
+  end_date: null                  # Use last available date (2025-11-21)
 
 # Execution settings
 execution:
-  parallel: true
-  n_jobs: 16                     # More parallelization for Phase 2
-  batch_size: 20
-
-  start_date: "2010-01-01"
-  end_date: "2023-12-31"
-
   initial_capital: 100000
-  commission: 0.001
+  commission: 0.001               # 0.1% commission
   slippage: 0.0
 
-# Walk-forward validation
+  # Performance settings
+  parallel: false                 # Sequential to avoid overwhelming EC2
+  batch_size: 50                  # Process in batches
+  checkpoint_every: 500           # Save progress every 500 backtests
+
+# Walk-forward validation - DISABLED for Phase 2
 walk_forward:
-  enabled: true
-  train_years: 2                 # 2 years training
-  test_years: 1                  # 1 year testing
-  step_months: 6                 # Roll forward 6 months
-  min_in_sample_sharpe: 1.0      # Minimum IS Sharpe to proceed to OOS
+  enabled: false                  # Keep it simple - full period testing
 
 # Success criteria for Phase 2
 success_criteria:
-  min_sharpe_in_sample: 1.0
-  min_sharpe_out_sample: 0.8
-  max_drawdown: 0.30             # Tighter drawdown limit
-  min_trades: 150
+  min_sharpe: 0.5                 # Target positive Sharpe
+  min_return: 0.05                # At least 5% total return
+  max_drawdown: 0.20              # Max 20% drawdown
+  min_trades: 20                  # At least 20 trades for statistical significance
+  min_win_rate: 0.50              # At least 50% win rate
 
-  # Top configs to advance
-  top_n: 20                      # Advance top 20 to Phase 3
+  # Top configs to advance to Phase 3
+  top_n: 20                       # Advance top 20 parameter combinations
 
 # Optimization settings
 optimization:
-  metric: "sharpe_ratio"         # Primary metric for ranking
-  secondary_metrics:             # Break ties with these
-    - "calmar_ratio"
-    - "total_return"
+  # Primary ranking metric
+  primary_metric: "sharpe_ratio"
 
-  # Constraints
-  constraints:
-    max_correlation: 0.80        # Max correlation between configs
-    min_stability: 0.70          # Stability across walk-forward windows
+  # Secondary metrics for tie-breaking
+  secondary_metrics:
+    - "total_return"
+    - "win_rate"
+    - "calmar_ratio"              # Return / Max Drawdown
+
+  # Save best parameter combinations
+  save_top_configs: 50            # Save top 50 for analysis
 
 # Output settings
 output:
   save_to_database: true
-  generate_report: true
-  report_format: ["pdf", "html"]
-  save_equity_curves: true
-  save_trade_logs: true
-  save_parameter_heatmaps: true
-
   results_dir: "data/results/phase_2"
-  report_path: "data/results/phase_2/phase_2_report.pdf"
+
+  # Summary outputs
+  generate_summary: true
+  summary_path: "data/results/phase_2/phase_2_summary.txt"
+
+  # Detailed outputs (optional)
+  save_equity_curves: false       # Skip to save space/time
+  save_trade_logs: false          # Skip to save space/time
+  generate_heatmaps: true         # Parameter heatmaps helpful
+  heatmap_path: "data/results/phase_2/parameter_heatmaps/"
 
 # Logging
 logging:
   level: "INFO"
-  log_to_database: true
   log_to_file: true
   log_file: "logs/phase_2.log"
-  progress_updates_every: 10     # Log every 10 configs
+  progress_updates_every: 100     # Log every 100 backtests
+
+  # Database logging
+  log_to_database: true
+  log_config_results: true        # Log each parameter combo result

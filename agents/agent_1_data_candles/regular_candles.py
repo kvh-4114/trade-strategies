@@ -67,18 +67,15 @@ class RegularCandleGenerator:
         Returns:
             Aggregated DataFrame
         """
-        # Resample to N-day periods
-        agg_dict = {
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'sum'
-        }
+        # Create rolling windows manually since 'first'/'last' don't work with pandas rolling
+        rolling = df.rolling(window=n_days, min_periods=n_days)
 
-        # Use rolling window to create overlapping N-day candles
-        # This maintains daily granularity but each candle represents N days
-        result = df.rolling(window=n_days, min_periods=n_days).agg(agg_dict)
+        result = pd.DataFrame(index=df.index)
+        result['open'] = rolling['open'].apply(lambda x: x.iloc[0], raw=False)
+        result['high'] = rolling['high'].max()
+        result['low'] = rolling['low'].min()
+        result['close'] = rolling['close'].apply(lambda x: x.iloc[-1], raw=False)
+        result['volume'] = rolling['volume'].sum()
 
         # Drop NaN rows from initial periods
         result = result.dropna()

@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "aws-rds": {
+      "command": "uvx",
+      "args": ["awslabs.rds-management-mcp-server@latest"],
+      "type": "stdio",
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "aws-cloudcontrol": {
+      "command": "uvx",
+      "args": ["awslabs.ccapi-mcp-server@latest"],
+      "type": "stdio",
+      "timeout": 60,
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-east-1",
+        "DEFAULT_TAGS": "enabled",
+        "SECURITY_SCANNING": "enabled"
+      }
+    }
+  }
+}

@@ -10,6 +10,10 @@ from datetime import datetime, date
 import pandas as pd
 from contextlib import contextmanager
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Database connection options
 try:

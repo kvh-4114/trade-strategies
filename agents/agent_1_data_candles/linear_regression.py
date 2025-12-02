@@ -145,14 +145,36 @@ class LinearRegressionCandleGenerator:
                 # Get window of data
                 window_data = series.iloc[i - window + 1:i + 1].values
 
-                # Fit linear regression
-                x = np.arange(window)
-                slope, intercept, _, _, _ = stats.linregress(x, window_data)
+                # Convert to float array (handles Decimal types from database)
+                try:
+                    window_data = np.array(window_data, dtype=float)
+                except (ValueError, TypeError):
+                    predictions.append(np.nan)
+                    continue
 
-                # Predict value at end of window (last position)
-                prediction = slope * (window - 1) + intercept
+                # Validate data
+                if len(window_data) != window or np.any(np.isnan(window_data)):
+                    predictions.append(np.nan)
+                    continue
 
-                predictions.append(prediction)
+                try:
+                    # Fit linear regression
+                    x = np.arange(window)
+                    result = stats.linregress(x, window_data)
+
+                    # Handle both old tuple format and new LinregressResult object
+                    if hasattr(result, 'slope'):
+                        slope = result.slope
+                        intercept = result.intercept
+                    else:
+                        slope, intercept = result[0], result[1]
+
+                    # Predict value at end of window (last position)
+                    prediction = slope * (window - 1) + intercept
+
+                    predictions.append(prediction)
+                except Exception:
+                    predictions.append(np.nan)
 
         return pd.Series(predictions, index=series.index)
 
@@ -167,15 +189,16 @@ class LinearRegressionCandleGenerator:
         Returns:
             Aggregated DataFrame
         """
-        agg_dict = {
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'sum'
-        }
+        # Create rolling windows manually since 'first'/'last' don't work with pandas rolling
+        rolling = df.rolling(window=n_days, min_periods=n_days)
 
-        result = df.rolling(window=n_days, min_periods=n_days).agg(agg_dict)
+        result = pd.DataFrame(index=df.index)
+        result['open'] = rolling['open'].apply(lambda x: x.iloc[0], raw=False)
+        result['high'] = rolling['high'].max()
+        result['low'] = rolling['low'].min()
+        result['close'] = rolling['close'].apply(lambda x: x.iloc[-1], raw=False)
+        result['volume'] = rolling['volume'].sum()
+
         result = result.dropna()
 
         self.logger.info(
